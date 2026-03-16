@@ -1,0 +1,137 @@
+# Installation und Start
+
+Diese Anleitung beschreibt, wie die Ionic + Vue Anwendung lokal eingerichtet und gestartet wird.
+
+## Voraussetzungen
+
+Folgende Software muss installiert sein:
+
+* Node.js (empfohlen: aktuelle LTS-Version)
+* npm
+* Ionic CLI
+
+Überprüfen der Installation:
+
+```bash
+node -v
+npm -v
+ionic --version
+```
+
+Falls Ionic CLI noch nicht installiert ist:
+
+```bash
+npm install -g @ionic/cli
+```
+
+---
+
+# Projekt installieren
+
+Repository klonen:
+
+```bash
+git clone <REPOSITORY_URL>
+```
+
+In den Projektordner wechseln:
+
+```bash
+cd CDMA
+```
+
+Abhängigkeiten installieren:
+
+```bash
+npm install --legacy-peer-deps
+```
+
+---
+
+# Entwicklungsserver starten
+
+Die Anwendung kann lokal mit folgendem Befehl gestartet werden:
+
+```bash
+ionic serve
+```
+
+Der Dev-Server startet anschließend automatisch und öffnet die Anwendung im Browser unter:
+
+```
+http://localhost:8100
+```
+
+Änderungen am Code werden automatisch neu geladen (Hot Reload).
+
+---
+
+# Projekt bauen
+
+Für eine Produktionsversion kann das Projekt gebaut werden:
+
+```bash
+ionic build
+```
+
+Die fertige Webanwendung befindet sich anschließend im Ordner:
+
+```
+dist/
+```
+
+---
+
+# Optionale Native Builds (iOS / Android)
+
+Das Projekt kann zusätzlich als native Mobile-App mit Capacitor gebaut werden.
+
+Capacitor installieren:
+
+```bash
+npm install @capacitor/core @capacitor/cli
+```
+
+iOS Projekt hinzufügen:
+
+```bash
+npm install @capacitor/ios
+npx cap add ios
+```
+
+Projekt synchronisieren:
+
+```bash
+ionic build
+npx cap sync
+```
+
+iOS Projekt in Xcode öffnen:
+
+```bash
+npx cap open ios
+```
+
+---
+
+# Entwicklungsworkflow
+
+Während der Entwicklung werden hauptsächlich folgende Befehle verwendet:
+
+Starten der App:
+
+```bash
+ionic serve
+```
+
+Dependencies installieren:
+
+```bash
+npm install
+```
+
+Produktionsbuild erstellen:
+
+```bash
+ionic build
+```
