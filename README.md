@@ -1,6 +1,6 @@
 # CDMAProjekt
 
-# Blueprint Learning Platform
+## Blueprint Learning Platform
 
 Eine plattformübergreifende Lernanwendung auf Basis von **Ionic**, mit der Programmierlogik über ein **Blueprint-/Node-basiertes System** vermittelt wird.
 
