@@ -61,12 +61,10 @@ Das Projekt befindet sich aktuell in Planung / Entwicklung.
 
 ## Ideen für die Zukunft
 
-- Export und Import von Blueprint-Projekten
 - Vorgefertigte Lernlevel
-- Weitere Spielkonzepte neben Sokoban
-- Tutorials und geführte Challenges
-- Teilen von Lösungen mit anderen Nutzer:innen
-- Erweiterter Debugger mit Variablen- und Zustandsanzeige
+- Optional: Weitere Spielkonzepte neben Sokoban
+- Optional: Tutorials und geführte Challenges
+- Optional: Erweiterter Debugger mit Variablen- und Zustandsanzeige
 
 ## Installation
 
