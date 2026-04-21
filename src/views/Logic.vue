@@ -1,69 +1,80 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <Header />
 
     <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
+      <div class="split-layout">
+        <section class="pane left-pane">
+          <h2>{{ subtitle }}</h2>
+          <strong>{{ message }}</strong>
+        </section>
 
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
-          >
-            {{ link.text }}
-          </a>
-        </p>
+        <section class="pane right-pane">
+          <p>
+            Start with Ionic
+            <a
+              target="_blank"
+              rel="noopener noreferrer"
+              :href="link.url"
+            >
+              {{ link.text }}
+            </a>
+          </p>
+        </section>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
-
+import { IonContent, IonPage } from '@ionic/vue'
 import { Logic } from '@/composables/Logic'
+import Header from '@/components/Header.vue'
 
-const { title, subtitle, message, link } = Logic()
+const { subtitle, message, link } = Logic()
 </script>
 
 <style scoped>
-#container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.split-layout {
+  display: flex;
+  min-height: 100%;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.pane {
+  padding: 24px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
+/* Mobile + Tablet default: 70 / 30 */
+.left-pane {
+  flex: 0 0 70%;
+  border-right: 1px solid #dcdcdc;
+}
+
+.right-pane {
+  flex: 0 0 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-pane p {
   margin: 0;
 }
 
-#container a {
+.right-pane a {
   text-decoration: none;
+}
+
+/* Desktop und größer: 60 / 40 */
+@media (min-width: 1024px) {
+  .left-pane {
+    flex-basis: 60%;
+  }
+
+  .right-pane {
+    flex-basis: 40%;
+  }
 }
 </style>
