@@ -4,7 +4,8 @@
     <!-- HEADER COMPONENT -->
     <Header />
 
-    <ion-content class="map-page">
+    <ion-content class="map-page"
+                 :style="{ '--background': colors.background }">
 
       <h1 class="title">World Map</h1>
 
@@ -91,6 +92,8 @@ const { nodes, connections, getNode } = Maps()
 
   font-size: 28px;
   background: transparent;
+
+  color: v-bind('colors.text');
 }
 
 /* WORLD CENTER */
