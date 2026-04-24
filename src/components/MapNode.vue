@@ -59,6 +59,7 @@ defineProps<{
   border: 4px solid v-bind('colors.primaryBorder');
 
   background: v-bind('colors.background');
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* STATES */
@@ -89,7 +90,7 @@ defineProps<{
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: v-bind('colors.primaryLight');
+  background: v-bind('colors.primary');
 
   display: flex;
   align-items: center;
@@ -101,7 +102,7 @@ defineProps<{
 .complete .icon-circle ion-icon {
   color: white;
   transform: none;
-  font-size: 20px;
+  font-size: 28px;
 }
 
 /* STATES → ICON COLORS */
