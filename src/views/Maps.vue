@@ -17,7 +17,7 @@
           <div class="world">
 
             <!-- LINES -->
-            <svg class="lines">
+            <svg class="lines" viewBox="0 0 800 800">
 
               <line
                 v-for="(conn, index) in connections"
@@ -99,23 +99,27 @@ const { nodes, connections, getNode } = Maps()
 /* WORLD CENTER */
 .world {
   position: absolute;
-  top: 50%;
+  top: 35%;
   left: 50%;
+
+  width: 800px;
+  height: 800px;
 }
 
 /* LINES */
 .lines {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
   overflow: visible;
+  pointer-events: none;
 }
 
 .lines line {
   stroke: v-bind('colors.line');
-  stroke-width: 3;
+  stroke-width: 2.5;
 }
 
 </style>

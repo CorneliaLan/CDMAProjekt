@@ -45,8 +45,10 @@ defineProps<{
 <style scoped>
 .node {
   position: absolute;
+  width: 80px;
+  height: 80px;
+
   transform: translate(-50%, -50%);
-  text-align: center;
 }
 
 .diamond {
