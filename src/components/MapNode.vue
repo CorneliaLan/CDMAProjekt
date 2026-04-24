@@ -56,7 +56,7 @@ defineProps<{
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid v-bind('colors.primaryLight');
+  border: 4px solid v-bind('colors.primaryBorder');
 
   background: v-bind('colors.background');
 }
@@ -69,7 +69,7 @@ defineProps<{
 .active .diamond {
   background: v-bind('colors.active');
   color: white;
-  border: 4px solid v-bind('colors.primaryLight');
+  border: 4px solid v-bind('colors.primaryBorder');
   
   box-shadow: 0 0 0 6px v-bind('colors.active');
 }
@@ -118,7 +118,7 @@ defineProps<{
 
 /* locked */
 .locked .diamond ion-icon {
-  color: v-bind('colors.text');
+  color: v-bind('colors.textMuted');
 }
 
 /* LABEL */
