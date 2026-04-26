@@ -163,6 +163,7 @@ h1 {
   display: flex;
   justify-content: center;
   gap: 12px;
+  pointer-events: none;
 }
 
 .level-icon {
