@@ -47,12 +47,8 @@ defineProps<{
   position: absolute;
   width: 80px;
   height: 80px;
-  cursor: pointer;
-  transform: translate(-50%, -50%);
-}
 
-.locked{
-  cursor: not-allowed;
+  transform: translate(-50%, -50%);
 }
 
 .diamond {
