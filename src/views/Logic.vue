@@ -35,7 +35,7 @@
         </section>
 
         <section class="pane right-pane">
-          <!-- call preview -->
+          Level {{ levelId }}
         </section>
       </div>
     </ion-content>
@@ -43,7 +43,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 import Header from '@/components/Header.vue'
@@ -57,6 +58,10 @@ type Blueprint = {
   color: string
   textColor: string
 }
+
+const route = useRoute()
+
+const levelId = computed(() => Number(route.params.id))
 
 const blueprints = ref<Blueprint[]>([])
 

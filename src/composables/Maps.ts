@@ -4,6 +4,7 @@ export type NodeType = {
   id: number
   title: string
   status: NodeStatus
+  complexity: number
   x: number
   y: number
 }
@@ -14,6 +15,7 @@ export function Maps() {
     id: i + 1,
     title: `Level ${i + 1}`,
     status: i < 2 ? 'complete' : i === 2 ? 'active' : 'locked',
+    complexity: Math.min(3, i + 1),
     x: i % 2 === 0 ? -150 : 150,
     y: -200 + i * 140
   }))

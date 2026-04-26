@@ -23,12 +23,12 @@ const routes: Array<RouteRecordRaw> = [
   component: Login
   },
   {
-  path: '/level',
-  name: 'Level',
-  component: Level
+    path: '/level/:id',
+    name: 'Level',
+    component: Level
   },
   {
-  path: '/logic',
+  path: '/logic/:id',
   name: 'Logic',
   component: Logic
   },

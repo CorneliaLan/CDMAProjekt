@@ -38,6 +38,7 @@
               :status="node.status"
               :x="node.x"
               :y="node.y"
+              @click="openLevel(node.id)"
             />
 
           </div>
@@ -50,6 +51,7 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { IonContent, IonPage } from '@ionic/vue'
 
 import Header from '@/components/Header.vue'
@@ -60,6 +62,16 @@ import { colors } from '@/theme/colors'
 import { Maps } from '@/composables/Maps'
 
 const { nodes, connections, getNode } = Maps()
+const router = useRouter()
+
+const openLevel = (levelId: string | number) => {
+  router.push({
+    name: 'Level',
+    params: {
+      id: levelId
+    }
+  })
+}
 
 </script>
 
