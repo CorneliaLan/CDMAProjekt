@@ -64,9 +64,6 @@ import { Maps } from '@/composables/Maps'
 const { nodes, connections, getNode } = Maps()
 const router = useRouter()
 
-<<<<<<< HEAD
-const openLevel = (levelId: string | number) => {
-=======
 
 const openLevel = (id: number) => {
   const node = nodes.find(n => n.id === id)
@@ -75,11 +72,10 @@ const openLevel = (id: number) => {
     return
   }
 
->>>>>>> feature/ui_level_page
   router.push({
     name: 'Level',
     params: {
-      id: levelId
+      id
     }
   })
 }
