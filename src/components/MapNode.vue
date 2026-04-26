@@ -8,9 +8,9 @@
     }"
   >
     <div class="diamond">
-        <div v-if="status === 'complete'" class="icon-circle">
-          <ion-icon name="checkmark"></ion-icon>
-        </div>
+      <div v-if="status === 'complete'" class="icon-circle">
+        <ion-icon name="checkmark"></ion-icon>
+      </div>
       <ion-icon v-if="status === 'active'" name="play"></ion-icon>
       <ion-icon v-if="status === 'locked'" name="lock-closed"></ion-icon>
     </div>
@@ -128,6 +128,7 @@ defineProps<{
 .label {
   display: inline-block;
   margin-top: 30px;
+  margin-left: 12px;
   font-size: 10px;
   background: v-bind('colors.active');
   color: white;
