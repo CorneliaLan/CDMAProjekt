@@ -174,7 +174,7 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
   left: 24px;
 
   display: flex;
-  flex-direction: column; /* 🔥 wichtig */
+  flex-direction: column;
   gap: 10px;
 
   align-items: flex-start;

@@ -14,6 +14,7 @@
         class="menu-item"
         :class="[item.position, { active: activeItem === item.label }]"
         @mouseenter="onHover(item)"
+        @mouseleave="activeItem=null"
         @click="onClick(item)"
         @touchstart="onHover(item)"
       >
@@ -136,34 +137,35 @@ const onActionClick = (item: any, action: string) => {
 
 .axis {
   position: absolute;
-  background-image: linear-gradient(
-    to right,
-    rgba(91, 127, 151, 0.35) 50%,
-    transparent 50%
-  );
-  background-size: 8px 1px;
+  opacity: 1;
 }
 
 .axis.horizontal {
-  width: 420px;
-  height: 1px;
+  width: 440px;
+  height: 2px;
   top: 50%;
   left: 50%;
   transform: translateX(-50%);
+  background-image: linear-gradient(
+    to right,
+    rgba(55, 80, 110, 0.75) 55%,
+    transparent 45%
+  );
+  background-size: 10px 2px;
 }
 
 .axis.vertical {
-  width: 1px;
-  height: 430px;
+  width: 2px;
+  height: 440px;
   top: 50%;
   left: 50%;
   transform: translateY(-50%);
   background-image: linear-gradient(
     to bottom,
-    rgba(91, 127, 151, 0.35) 50%,
-    transparent 50%
+    rgba(55, 80, 110, 0.75) 55%,
+    transparent 45%
   );
-  background-size: 1px 8px;
+  background-size: 2px 10px;
 }
 
 .center-button {
@@ -194,7 +196,7 @@ const onActionClick = (item: any, action: string) => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition: transform 0.2s ease;
+  /*transition: transform 0.2s ease;*/
 }
 
 .menu-item.top {
@@ -311,5 +313,138 @@ const onActionClick = (item: any, action: string) => {
 
 .submenu-button:hover {
   transform: scale(1.04);
+}
+
+/* Phone */
+@media (max-width: 767px) {
+  .radial-menu {
+    width: 360px;
+    height: 360px;
+  }
+
+  .axis.horizontal {
+    width: 230px;
+  }
+
+  .axis.vertical {
+    height: 230px;
+  }
+
+  .center-button {
+    width: 42px;
+    height: 42px;
+    font-size: 22px;
+  }
+
+  .icon-button {
+    width: 46px;
+    height: 50px;
+  }
+
+  .icon-button ion-icon {
+    font-size: 20px;
+  }
+
+  .label {
+    font-size: 11px;
+    min-width: 68px;
+    padding: 5px 8px;
+  }
+
+  .menu-item.top {
+    top: 20px;
+  }
+
+  .menu-item.right {
+    top: 150px;
+    right: 32px;
+  }
+
+  .menu-item.bottom {
+    top: 245px;
+  }
+
+  .menu-item.bottom .submenu {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    margin-top: 0;
+    margin-left: 8px;
+
+    transform: translateY(-50%);
+  }
+
+  .menu-item.left {
+    top: 150px;
+    left: 32px;
+  }
+
+  .submenu {
+    min-width: 70px;
+    max-width: 140px;
+    width: auto;
+  }
+
+  .submenu-button {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .radial-menu {
+    width: 520px;
+    height: 520px;
+  }
+
+  .axis.horizontal {
+    width: 340px;
+  }
+
+  .axis.vertical {
+    height: 340px;
+  }
+
+  .center-button {
+    width: 46px;
+    height: 46px;
+    font-size: 23px;
+  }
+
+  .icon-button {
+    width: 62px;
+    height: 68px;
+  }
+
+  .label {
+    font-size: 14px;
+    min-width: 78px;
+    padding: 8px 14px;
+  }
+
+  .menu-item.top {
+    top: 50px;
+  }
+
+  .menu-item.right {
+    top: 220px;
+    right: 56px;
+  }
+
+  .menu-item.bottom {
+    top: 330px;
+  }
+
+  .menu-item.left {
+    top: 220px;
+    left: 56px;
+  }
+
+
+  .submenu-button {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
 }
 </style>
