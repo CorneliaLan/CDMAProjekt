@@ -56,6 +56,7 @@ import { IonContent, IonPage } from '@ionic/vue'
 
 import Header from '@/components/Header.vue'
 import MapNode from '@/components/MapNode.vue'
+import type { NodeType } from '@/composables/Maps'
 
 import { colors } from '@/theme/colors'
 
@@ -64,11 +65,16 @@ import { Maps } from '@/composables/Maps'
 const { nodes, connections, getNode } = Maps()
 const router = useRouter()
 
-const openLevel = (levelId: string | number) => {
+
+const openLevel = (node: NodeType) => {
+  if (node.status === 'locked') {
+    return
+  }
+
   router.push({
     name: 'Level',
     params: {
-      id: levelId
+      id: node.id
     }
   })
 }
