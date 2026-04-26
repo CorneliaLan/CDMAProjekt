@@ -1,69 +1,198 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <Header />
 
     <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
+      <div class="split-layout">
+        <section
+          class="pane left-pane"
+          @pointerdown="startLongPress"
+          @pointerup="cancelLongPress"
+          @pointerleave="cancelLongPress"
+          @pointercancel="cancelLongPress"
+        >
+          <div class="blueprint-list">
+            <div
+              v-for="blueprint in blueprints"
+              :key="blueprint.id"
+              class="blueprint-card"
+              :style="{ backgroundColor: blueprint.color, color: blueprint.textColor }"
+            >
+              {{ blueprint.action }}
+            </div>
+          </div>
+          <button class="floating-plus" @click.stop="openRadialMenu">
+            <ion-icon :icon="addOutline" />
+          </button>
 
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
+          <div
+            v-if="isRadialMenuOpen"
+            class="radial-menu-overlay"
+            @click.self="closeRadialMenu"
           >
-            {{ link.text }}
-          </a>
-        </p>
+            <RadialMenu @click.stop @select="addBlueprint" />
+          </div>
+        </section>
+
+        <section class="pane right-pane">
+          <!-- call preview -->
+        </section>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import { ref } from 'vue'
+import { IonContent, IonIcon, IonPage } from '@ionic/vue'
+import { addOutline } from 'ionicons/icons'
+import Header from '@/components/Header.vue'
+import RadialMenu from '@/components/RadialMenu.vue'
+import { useRadialMenu } from '@/composables/useRadialMenu'
 
-import { Logic } from '@/composables/Logic'
+type Blueprint = {
+  id: number
+  category: string
+  action: string
+  color: string
+  textColor: string
+}
 
-const { title, subtitle, message, link } = Logic()
+const blueprints = ref<Blueprint[]>([])
+
+const {
+  isOpen: isRadialMenuOpen,
+  open: openRadialMenu,
+  close: closeRadialMenu,
+  startLongPress,
+  cancelLongPress
+} = useRadialMenu()
+
+const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
+  blueprints.value.push({
+    id: Date.now(),
+    ...payload
+  })
+
+  closeRadialMenu()
+}
 </script>
 
 <style scoped>
-#container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.split-layout {
+  display: flex;
+  min-height: 100%;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.pane {
+  padding: 24px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
+/* Mobile + Tablet default: 70 / 30 */
+.left-pane {
+  flex: 0 0 70%;
+  border-right: 1px solid #dcdcdc;
+}
+
+.right-pane {
+  flex: 0 0 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-pane p {
   margin: 0;
 }
 
-#container a {
+.right-pane a {
   text-decoration: none;
+}
+
+/* Desktop und größer: 60 / 40 */
+@media (min-width: 1024px) {
+  .left-pane {
+    flex-basis: 60%;
+  }
+
+  .right-pane {
+    flex-basis: 40%;
+  }
+}
+
+.left-pane {
+  position: relative;
+  flex: 0 0 70%;
+  border-right: 1px solid #dcdcdc;
+  overflow: hidden;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.floating-plus {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ion-color-primary);
+  color: #ffffff;
+  font-size: 28px;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+}
+
+.radial-menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+
+  padding: 24px 24px 96px 24px;
+
+  background: rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(2px);
+}
+
+.blueprint-list {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  align-items: flex-start;
+}
+
+.blueprint-card {
+  display: inline-block;
+
+  padding: 6px 12px;
+  border-radius: 12px;
+
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+
+  white-space: nowrap;
+  width: fit-content;
+
+  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
 </style>
