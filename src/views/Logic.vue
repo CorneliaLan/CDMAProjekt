@@ -11,7 +11,16 @@
           @pointerleave="cancelLongPress"
           @pointercancel="cancelLongPress"
         >
-
+          <div class="blueprint-list">
+            <div
+              v-for="blueprint in blueprints"
+              :key="blueprint.id"
+              class="blueprint-card"
+              :style="{ backgroundColor: blueprint.color, color: blueprint.textColor }"
+            >
+              {{ blueprint.action }}
+            </div>
+          </div>
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
@@ -21,7 +30,7 @@
             class="radial-menu-overlay"
             @click.self="closeRadialMenu"
           >
-            <RadialMenu @click.stop />
+            <RadialMenu @click.stop @select="addBlueprint" />
           </div>
         </section>
 
@@ -34,14 +43,23 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
-//import { Logic } from '@/composables/Logic'
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
 import { useRadialMenu } from '@/composables/useRadialMenu'
 
-//const { subtitle, message, link } = Logic()
+type Blueprint = {
+  id: number
+  category: string
+  action: string
+  color: string
+  textColor: string
+}
+
+const blueprints = ref<Blueprint[]>([])
+
 const {
   isOpen: isRadialMenuOpen,
   open: openRadialMenu,
@@ -50,6 +68,14 @@ const {
   cancelLongPress
 } = useRadialMenu()
 
+const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
+  blueprints.value.push({
+    id: Date.now(),
+    ...payload
+  })
+
+  closeRadialMenu()
+}
 </script>
 
 <style scoped>
@@ -140,5 +166,33 @@ const {
 
   background: rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(2px);
+}
+
+.blueprint-list {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+
+  display: flex;
+  flex-direction: column; /* 🔥 wichtig */
+  gap: 10px;
+
+  align-items: flex-start;
+}
+
+.blueprint-card {
+  display: inline-block;
+
+  padding: 6px 12px;
+  border-radius: 12px;
+
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+
+  white-space: nowrap;
+  width: fit-content;
+
+  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
 </style>

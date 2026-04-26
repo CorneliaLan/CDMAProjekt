@@ -31,14 +31,14 @@
           v-if="activeItem === item.label"
           class="submenu"
         >
-          <button
-            v-for="action in item.actions"
-            :key="action"
-            class="submenu-button"
-            @click.stop="onActionClick(item.label, action)"
-          >
-            {{ action }}
-          </button>
+        <button
+          v-for="action in item.actions"
+          :key="action"
+          class="submenu-button"
+          @click.stop="onActionClick(item, action)"
+        >
+          {{ action }}
+        </button>
         </div>
       </div>
     </div>
@@ -58,32 +58,47 @@ import {
 
 const activeItem = ref<string | null>(null)
 
+const emit = defineEmits<{
+  select: [payload: {
+    category: string
+    action: string
+    color: string
+    textColor?: string
+  }]
+}>()
+
 const items = [
   {
     label: 'Loops',
     icon: repeatOutline,
     position: 'top',
+    color: '#3e3fd3',
     actions: ['Repeat'],
   },
   {
     label: 'Conditions',
     icon: gitBranchOutline,
     position: 'right',
+    color: '#dcd7ff',
+    textColor: '#4545d7',
     actions: ['If Win', 'If Lose'],
   },
   {
     label: 'Events',
     icon: flashOutline,
     position: 'bottom',
+    color: '#4a67a8',
     actions: ['Level Start', 'Level End'],
   },
   {
     label: 'Movement',
     icon: moveOutline,
     position: 'left',
+    color: '#535e72',
     actions: ['Move Up', 'Move Down', 'Move Left', 'Move Right'],
   },
 ]
+
 
 const onHover = (item: any) => {
   activeItem.value = item.label
@@ -93,16 +108,20 @@ const onClick = (item: any) => {
   activeItem.value = activeItem.value === item.label ? null : item.label
 }
 
-const onActionClick = (category: string, action: string) => {
-  console.log('clicked:', category, action)
+const onActionClick = (item: any, action: string) => {
+  emit('select', {
+    category: item.label,
+    action,
+    color: item.color,
+    textColor: item.textColor ?? '#ffffff',
+  })
 }
 </script>
 
 <style scoped>
 .radial-menu-container {
   min-height: 50vh;
-  background: #8d8d8d;
-  transparent: 70%;
+  background: rgba(141, 141, 141, 0.7);
   border-radius: 16px;
 }
 
@@ -111,8 +130,7 @@ const onActionClick = (category: string, action: string) => {
   width: 650px;
   height: 650px;
   border-radius: 16px;
-  background: #cfcfcf;
-  transparent: 70%;
+  background: rgba(141, 141, 141, 1);
   overflow: visible;
 }
 
