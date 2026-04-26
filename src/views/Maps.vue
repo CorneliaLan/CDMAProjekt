@@ -66,8 +66,10 @@ const { nodes, connections, getNode } = Maps()
 const router = useRouter()
 
 
-const openLevel = (node: NodeType) => {
-  if (node.status === 'locked') {
+const openLevel = (id: number) => {
+  const node = nodes.find(n => n.id === id)
+
+  if (!node || node.status === 'locked') {
     return
   }
 
