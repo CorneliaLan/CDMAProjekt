@@ -4,22 +4,29 @@
 
     <ion-content :fullscreen="true">
       <div class="split-layout">
-        <section class="pane left-pane">
-          <h2>{{ subtitle }}</h2>
-          <strong>{{ message }}</strong>
+        <section
+          class="pane left-pane"
+          @pointerdown="startLongPress"
+          @pointerup="cancelLongPress"
+          @pointerleave="cancelLongPress"
+          @pointercancel="cancelLongPress"
+        >
+
+          <button class="floating-plus" @click.stop="openRadialMenu">
+            <ion-icon :icon="addOutline" />
+          </button>
+
+          <div
+            v-if="isRadialMenuOpen"
+            class="radial-menu-overlay"
+            @click.self="closeRadialMenu"
+          >
+            <RadialMenu @click.stop />
+          </div>
         </section>
 
         <section class="pane right-pane">
-          <p>
-            Start with Ionic
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              :href="link.url"
-            >
-              {{ link.text }}
-            </a>
-          </p>
+          <!-- call preview -->
         </section>
       </div>
     </ion-content>
@@ -27,11 +34,22 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonPage } from '@ionic/vue'
-import { Logic } from '@/composables/Logic'
+import { IonContent, IonIcon, IonPage } from '@ionic/vue'
+import { addOutline } from 'ionicons/icons'
+//import { Logic } from '@/composables/Logic'
 import Header from '@/components/Header.vue'
+import RadialMenu from '@/components/RadialMenu.vue'
+import { useRadialMenu } from '@/composables/useRadialMenu'
 
-const { subtitle, message, link } = Logic()
+//const { subtitle, message, link } = Logic()
+const {
+  isOpen: isRadialMenuOpen,
+  open: openRadialMenu,
+  close: closeRadialMenu,
+  startLongPress,
+  cancelLongPress
+} = useRadialMenu()
+
 </script>
 
 <style scoped>
@@ -76,5 +94,51 @@ const { subtitle, message, link } = Logic()
   .right-pane {
     flex-basis: 40%;
   }
+}
+
+.left-pane {
+  position: relative;
+  flex: 0 0 70%;
+  border-right: 1px solid #dcdcdc;
+  overflow: hidden;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.floating-plus {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 30;
+
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--ion-color-primary);
+  color: #ffffff;
+  font-size: 28px;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+}
+
+.radial-menu-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+
+  padding: 24px 24px 96px 24px;
+
+  background: rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(2px);
 }
 </style>
