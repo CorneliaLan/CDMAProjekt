@@ -51,7 +51,7 @@ export class GameEngine {
         console.log(`[GameEngine] ${stepIndex + 1}. ${block.id} -> (${this.state.playerX}, ${this.state.playerY})`);
       }
 
-      if (context.isTargetReached()) {
+      if (context.isTargetReached()) { // TODO: Add abort logic into execute base block https://github.com/CorneliaLan/CDMAProjekt/pull/19
         break;
       }
     }

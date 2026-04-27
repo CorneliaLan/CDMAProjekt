@@ -28,7 +28,7 @@ const routes: Array<RouteRecordRaw> = [
   component: Level
   },
   {
-  path: '/logic',
+  path: '/editor',
   name: 'Editor',
   component: Editor
   },

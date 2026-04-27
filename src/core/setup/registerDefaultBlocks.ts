@@ -11,10 +11,10 @@ import { RepeatBlock } from '../editor/blocks/repeat/RepeatBlock';
  */
 export function registerDefaultBlocks(): void {
   const registry = BlockRegistry.getInstance();
-  registry.register(new MoveDownBlock());
-  registry.register(new MoveLeftBlock());
-  registry.register(new MoveRightBlock());
-  registry.register(new MoveUpBlock());
-  registry.register(new IfWallBlock());
-  registry.register(new RepeatBlock());
+  registry.register(() => new MoveDownBlock());
+  registry.register(() => new MoveLeftBlock());
+  registry.register(() => new MoveRightBlock());
+  registry.register(() => new MoveUpBlock());
+  registry.register(() => new IfWallBlock());
+  registry.register(() => new RepeatBlock());
 }
