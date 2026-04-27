@@ -30,8 +30,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
   path: '/logic',
-  name: 'Logic',
-  component: Logic
+  name: 'Editor',
+  component: Editor
   },
   {
   path: '/preview',
