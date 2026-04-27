@@ -87,7 +87,7 @@ const goToMap = () => {
 
 const startLevel = () => {
   router.push({
-    name: 'Editor',
+    name: 'Logic',
     params: {
       id: levelId.value
     }
