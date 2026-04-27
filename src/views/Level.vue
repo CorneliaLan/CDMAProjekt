@@ -2,7 +2,8 @@
   <ion-page>
     <Header />
 
-    <ion-content :fullscreen="true">
+    <ion-content :fullscreen="true"
+                 :style="{ '--background': colors.background }">
       <div class="level-page">
         <div class="level-card">
           <section class="level-left">
@@ -12,19 +13,6 @@
             <p class="subtitle">
               {{ currentLevel?.status ?? 'Unknown' }}
             </p>
-            <div class="icon-row">
-              <button class="level-icon purple">
-                <ion-icon :icon="serverOutline" />
-              </button>
-
-              <button class="level-icon orange">
-                <ion-icon :icon="arrowForwardOutline" />
-              </button>
-
-              <button class="level-icon gray">
-                <ion-icon :icon="terminalOutline" />
-              </button>
-            </div>
 
             <div class="complexity">
               <span>COMPLEXITY</span>
@@ -79,7 +67,7 @@ import {
 } from 'ionicons/icons'
 import Header from '@/components/Header.vue'
 import { Maps } from '@/composables/Maps'
-import { colors } from '@/theme/color'
+import { colors } from '@/theme/colors'
 const router = useRouter()
 const route = useRoute()
 
@@ -99,7 +87,7 @@ const goToMap = () => {
 
 const startLevel = () => {
   router.push({
-    name: 'Logic',
+    name: 'Editor',
     params: {
       id: levelId.value
     }
@@ -114,7 +102,7 @@ const startLevel = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #ffffff;
+  background: v-bind('colors.background');
 }
 
 .level-card {
@@ -122,23 +110,22 @@ const startLevel = () => {
   min-height: 540px;
   display: grid;
   grid-template-columns: 42% 58%;
-  border: 1px solid #dfe5f3;
-  border-radius: 6px;
+  border-radius: 20px;
   overflow: hidden;
-  box-shadow: 0 18px 45px rgba(29, 54, 102, 0.08);
+  box-shadow: 0 18px 45px v-bind('colors.line');
 }
 
 .level-left {
   padding: 58px;
-  background: color.background;
+  background: v-bind('colors.primaryLight');
 }
 
 .status-badge {
   display: inline-block;
   padding: 10px 18px;
-  border-radius: 2px;
-  background: #d7e1fb;
-  color: #4f5b70;
+  border-radius: 16px;
+  background: v-bind('colors.secondary');
+  color: v-bind('colors.text');
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 2px;
@@ -146,7 +133,7 @@ const startLevel = () => {
 
 h1 {
   margin: 28px 0 8px;
-  color: #12366f;
+  color: v-bind('colors.primary');
   font-size: 68px;
   line-height: 1;
   font-weight: 900;
@@ -154,7 +141,7 @@ h1 {
 
 .subtitle {
   margin: 0;
-  color: #3e5fa5;
+  color: v-bind('colors.text');
   font-size: 26px;
 }
 
@@ -166,40 +153,12 @@ h1 {
   pointer-events: none;
 }
 
-.level-icon {
-  width: 68px;
-  height: 68px;
-  border-radius: 4px;
-  font-size: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.level-icon.purple {
-  border: 1px solid #b9b9ff;
-  background: #dedcff;
-  color: #4646df;
-}
-
-.level-icon.orange {
-  border: 1px solid #d8bfa8;
-  background: #eee4dc;
-  color: #9a5207;
-}
-
-.level-icon.gray {
-  border: 1px solid #c6ccda;
-  background: #e1e5ee;
-  color: #526077;
-}
-
 .complexity {
   margin-top: 72px;
 }
 
 .complexity span {
-  color: #3e5fa5;
+  color: v-bind('colors.text');
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 2px;
@@ -215,16 +174,17 @@ h1 {
   width: 46px;
   height: 8px;
   border-radius: 10px;
-  background: #c4cbf1;
+  background: v-bind('colors.background');
+  border: 1px solid v-bind('colors.textMuted');
 }
 
 .bar.active {
-  background: #4646df;
+  background: v-bind('colors.active');
 }
 
 .level-right {
   padding: 62px 58px 58px;
-  background: #ffffff;
+  background: v-bind('colors.background');
   display: flex;
   flex-direction: column;
 }
@@ -233,7 +193,7 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #3e5fa5;
+  color: v-bind('colors.text');
   font-size: 16px;
   font-weight: 800;
   letter-spacing: 4px;
@@ -242,12 +202,12 @@ h1 {
 .objective-title span {
   width: 26px;
   height: 2px;
-  background: #9eb5f5;
+  background: v-bind('colors.text');
 }
 
 .objective-content {
   flex: 1;
-  border-bottom: 1px solid #e1e6f0;
+  border-bottom: 1px solid v-bind('colors.textMuted');
 }
 
 .actions {
@@ -268,16 +228,17 @@ h1 {
 }
 
 .back-button {
-  color: #3e5fa5;
+  color: v-bind('colors.text');
   font-size: 20px;
 }
 
 .start-button {
   padding: 24px 42px;
-  background: #526077;
-  color: #ffffff;
+  background: v-bind('colors.primary');
+  color: v-bind('colors.background');
   font-size: 22px;
   box-shadow: 0 12px 24px rgba(39, 51, 74, 0.26);
+  border-radius: 16px;
 }
 
 @media (max-width: 767px) {

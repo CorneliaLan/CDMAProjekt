@@ -5,6 +5,7 @@
     <Header />
 
     <ion-content class="map-page"
+                 :fullscreen="true"
                  :style="{ '--background': colors.background }">
 
       <h1 class="title">World Map</h1>

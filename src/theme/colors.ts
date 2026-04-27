@@ -1,7 +1,9 @@
 export const colors = {
-  primary: '#6366f1',
+  primary: '#7678EE',
   primaryLight: '#e1e0ff',
   primaryBorder: '#ffffff',
+
+  secondary: '#C9C6FE',
 
   background: '#ffffff',
   surface: '#f5f6ff',
@@ -10,7 +12,7 @@ export const colors = {
   textMuted: '#888',
 
   complete: '#e1e0ff',
-  active: '#6366f1',
+  active: '#7678EE',
   locked: '#f5f6ff',
 
   line: '#bbb'
