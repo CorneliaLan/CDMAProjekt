@@ -1,12 +1,4 @@
 <template>
-
-
-<!-- ------------------HAS TO BE DELETED FOR FINAL POLISH ---------------- --->
-
-
-
-
-
   <ion-page>
     <Header />
 
