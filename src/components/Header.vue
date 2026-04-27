@@ -48,7 +48,7 @@ const router = useRouter()
 
 const tabs = [
   { name: 'Map', path: '/map' },
-  { name: 'Logic', path: '/logic' },
+  { name: 'Editor', path: '/logic' },
   { name: 'Preview', path: '/preview' }
 ]
 
