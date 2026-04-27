@@ -4,7 +4,7 @@ import { RouteRecordRaw } from 'vue-router';
 import Login from '../views/Login.vue'
 import Maps from '../views/Maps.vue'
 import Level from '../views/Level.vue'
-import Logic from '../views/Logic.vue'
+import Editor from '../views/Editor.vue'
 import Preview from '../views/Preview.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -29,8 +29,8 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
   path: '/logic',
-  name: 'Logic',
-  component: Logic
+  name: 'Editor',
+  component: Editor
   },
   {
   path: '/preview',
