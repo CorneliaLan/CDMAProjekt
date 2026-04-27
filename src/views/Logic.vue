@@ -2,7 +2,8 @@
   <ion-page>
     <Header />
 
-    <ion-content :fullscreen="true">
+    <ion-content :fullscreen="true"
+                 :style="{ '--background': colors.background }">
       <div class="split-layout">
         <section
           class="pane left-pane"
@@ -50,6 +51,7 @@ import { addOutline } from 'ionicons/icons'
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
 import { useRadialMenu } from '@/composables/useRadialMenu'
+import { colors } from '@/theme/colors'
 
 type Blueprint = {
   id: number

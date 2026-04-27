@@ -1,37 +1,24 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
 
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
+    <!-- HEADER COMPONENT -->
+    <Header />
 
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
-          >
-            {{ link.text }}
-          </a>
-        </p>
-      </div>
+    <ion-content class="map-page"
+                 :style="{ '--background': colors.background }">
+
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import { useRouter } from 'vue-router'
+import { IonContent, IonPage } from '@ionic/vue'
+
+import Header from '@/components/Header.vue'
+
+import { colors } from '@/theme/colors'
+
 
 import { Preview } from '@/composables/Preview'
 
