@@ -29,7 +29,7 @@ const routes: Array<RouteRecordRaw> = [
     component: Level
   },
   {
-  path: '/logic',
+  path: '/logic/:id',
   name: 'Editor',
   component: Editor
   },

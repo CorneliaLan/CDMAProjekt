@@ -2,8 +2,10 @@
   <ion-page>
     <Header />
 
-    <ion-content :fullscreen="true"
-                 :style="{ '--background': colors.background }">
+    <ion-content
+      :fullscreen="true"
+      :style="{ '--background': colors.background }"
+    >
       <div class="split-layout">
         <section
           class="pane left-pane"
@@ -12,16 +14,8 @@
           @pointerleave="cancelLongPress"
           @pointercancel="cancelLongPress"
         >
-          <div class="blueprint-list">
-            <div
-              v-for="blueprint in blueprints"
-              :key="blueprint.id"
-              class="blueprint-card"
-              :style="{ backgroundColor: blueprint.color, color: blueprint.textColor }"
-            >
-              {{ blueprint.action }}
-            </div>
-          </div>
+          <div ref="reteContainer" class="rete-editor"></div>
+
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
@@ -31,7 +25,7 @@
             class="radial-menu-overlay"
             @click.self="closeRadialMenu"
           >
-            <RadialMenu @click.stop @select="addBlueprint" />
+            <RadialMenu @click.stop @select="addReteNode" />
           </div>
         </section>
 
@@ -44,17 +38,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
+
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
 import { useRadialMenu } from '@/composables/useRadialMenu'
 import { colors } from '@/theme/colors'
 
-type Blueprint = {
-  id: number
+import { NodeEditor, ClassicPreset } from 'rete'
+import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
+import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin'
+import { VuePlugin, Presets, VueArea2D } from 'rete-vue-plugin'
+
+type Schemes = ClassicPreset.GetSchemes<
+  ClassicPreset.Node,
+  ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>
+>
+
+type AreaExtra = VueArea2D<Schemes>
+
+type BlueprintPayload = {
   category: string
   action: string
   color: string
@@ -62,10 +68,13 @@ type Blueprint = {
 }
 
 const route = useRoute()
-
 const levelId = computed(() => Number(route.params.id))
 
-const blueprints = ref<Blueprint[]>([])
+const reteContainer = ref<HTMLElement | null>(null)
+
+let editor: NodeEditor<Schemes> | null = null
+let area: AreaPlugin<Schemes, AreaExtra> | null = null
+let nodeIndex = 0
 
 const {
   isOpen: isRadialMenuOpen,
@@ -75,12 +84,81 @@ const {
   cancelLongPress
 } = useRadialMenu()
 
-const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
-  blueprints.value.push({
-    id: Date.now(),
-    ...payload
+const handlePanePointerDown = (event: PointerEvent) => {
+  const target = event.target as HTMLElement
+
+  const isReteInteraction = target.closest(
+    '.node, .socket, .input, .output, .control, .connection'
+  )
+
+  const isUiInteraction = target.closest(
+    '.floating-plus, .radial-menu-overlay'
+  )
+
+  if (isReteInteraction || isUiInteraction) {
+    cancelLongPress()
+    return
+  }
+
+  startLongPress()
+}
+
+onMounted(async () => {
+  if (!reteContainer.value) return
+
+  editor = new NodeEditor<Schemes>()
+  area = new AreaPlugin<Schemes, AreaExtra>(reteContainer.value)
+
+  const connection = new ConnectionPlugin<Schemes, AreaExtra>()
+  const render = new VuePlugin<Schemes, AreaExtra>()
+
+  render.addPreset(Presets.classic.setup())
+  connection.addPreset(ConnectionPresets.classic.setup())
+
+  editor.use(area)
+  area.use(connection)
+  area.use(render)
+
+  AreaExtensions.selectableNodes(area, AreaExtensions.selector(), {
+    accumulating: AreaExtensions.accumulateOnCtrl()
   })
 
+  AreaExtensions.simpleNodesOrder(area)
+})
+
+onBeforeUnmount(() => {
+  area?.destroy()
+  editor = null
+  area = null
+})
+
+const addReteNode = async (payload: BlueprintPayload) => {
+  if (!editor || !area) return
+
+  const socket = new ClassicPreset.Socket(payload.category)
+  const node = new ClassicPreset.Node(payload.action)
+
+  const action = payload.action.toLowerCase()
+
+  const isLevelStart = action.includes('level start')
+  const isLevelEnd = action.includes('level end')
+
+  if (!isLevelStart) {
+    node.addInput('in', new ClassicPreset.Input(socket))
+  }
+
+  if (!isLevelEnd) {
+    node.addOutput('out', new ClassicPreset.Output(socket))
+  }
+
+  await editor.addNode(node)
+
+  await area.translate(node.id, {
+    x: 80 + nodeIndex * 40,
+    y: 80 + nodeIndex * 40
+  })
+
+  nodeIndex++
   closeRadialMenu()
 }
 </script>
@@ -89,6 +167,7 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
 .split-layout {
   display: flex;
   min-height: 100%;
+  height: 100%;
 }
 
 .pane {
@@ -97,10 +176,12 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
   min-width: 0;
 }
 
-/* Mobile + Tablet default: 70 / 30 */
 .left-pane {
+  position: relative;
   flex: 0 0 70%;
   border-right: 1px solid #dcdcdc;
+  overflow: hidden;
+  user-select: none;
 }
 
 .right-pane {
@@ -110,15 +191,13 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
   justify-content: center;
 }
 
-.right-pane p {
-  margin: 0;
+.rete-editor {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.right-pane a {
-  text-decoration: none;
-}
-
-/* Desktop und größer: 60 / 40 */
 @media (min-width: 1024px) {
   .left-pane {
     flex-basis: 60%;
@@ -127,15 +206,6 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
   .right-pane {
     flex-basis: 40%;
   }
-}
-
-.left-pane {
-  position: relative;
-  flex: 0 0 70%;
-  border-right: 1px solid #dcdcdc;
-  overflow: hidden;
-  user-select: none;
-  touch-action: manipulation;
 }
 
 .floating-plus {
@@ -153,7 +223,7 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
   align-items: center;
   justify-content: center;
 
-  background: var(--ion-color-primary);
+  background: v-bind('colors.primary');
   color: #ffffff;
   font-size: 28px;
 
@@ -173,33 +243,5 @@ const addBlueprint = (payload: Omit<Blueprint, 'id'>) => {
 
   background: rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(2px);
-}
-
-.blueprint-list {
-  position: absolute;
-  top: 24px;
-  left: 24px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  align-items: flex-start;
-}
-
-.blueprint-card {
-  display: inline-block;
-
-  padding: 6px 12px;
-  border-radius: 12px;
-
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-
-  white-space: nowrap;
-  width: fit-content;
-
-  box-shadow: 0 3px 8px rgba(0,0,0,0.18);
 }
 </style>
