@@ -20,6 +20,8 @@ export const LEVEL_DEFINITIONS: LevelDefinition[] = [
     id: 1,
     title: 'Level 1',
     description: 'Learn movement on a compact map with a simple goal path.',
+
+    // 1 - wall, 2 - chest, 3 - target, 0 - empty space
     grid: [
       [1, 1, 1, 1, 1],
       [1, 0, 0, 3, 1],

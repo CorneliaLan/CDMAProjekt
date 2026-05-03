@@ -39,6 +39,22 @@
           <ion-button @click="runProgram">Run Program</ion-button>
           <ion-button fill="outline" color="medium" @click="clearProgram">Clear Program</ion-button>
         </div>
+
+        <div v-if="gameState" class="level-grid">
+          <div
+            v-for="(row, y) in gameState.grid"
+            :key="`row-${y}`"
+            class="level-grid-row"
+          >
+            <span
+              v-for="(_, x) in row"
+              :key="`cell-${x}-${y}`"
+              class="level-grid-cell"
+            >
+              {{ cellValue(x, y) }}
+            </span>
+          </div>
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -95,6 +111,16 @@ const repeatIterations = (block: BaseBlock) => {
 const updateRepeatIterations = (index: number, iterations: number) => {
   setRepeatIterations(index, iterations);
 };
+
+const cellValue = (x: number, y: number): number | string => {
+  if (!gameState.value) {
+    return '';
+  }
+
+  return gameState.value.playerX === x && gameState.value.playerY === y
+    ? 'P'
+    : gameState.value.grid[y][x];
+};
 </script>
 
 <style scoped>
@@ -119,5 +145,23 @@ const updateRepeatIterations = (index: number, iterations: number) => {
   display: flex;
   gap: 12px;
   margin-top: 12px;
+}
+
+.level-grid {
+  margin-top: 16px;
+  font-family: monospace;
+}
+
+.level-grid-row {
+  display: flex;
+}
+
+.level-grid-cell {
+  align-items: center;
+  border: 1px solid #d0d0d0;
+  display: inline-flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
 }
 </style>
