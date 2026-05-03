@@ -4,7 +4,9 @@
     <!-- HEADER COMPONENT -->
     <Header />
 
-    <ion-content :fullscreen="true">
+   <ion-content class="preview-page"
+                 :fullscreen="true"
+                 :style="{ '--background': colors.background }">
 
       <div class="preview-container">
         <LevelPreview
@@ -14,7 +16,7 @@
         />
       </div>
 
-    </ion-content>
+     </ion-content>
   </ion-page>
 </template>
 
@@ -22,6 +24,8 @@
 import { IonContent, IonPage } from '@ionic/vue'
 import Header from '@/components/Header.vue'
 import LevelPreview from '@/components/LevelPreview.vue'
+
+import { colors } from '@/theme/colors'
 
 const level = [
   [0,1,1,1,1,0,0,0],

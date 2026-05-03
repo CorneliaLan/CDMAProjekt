@@ -5,6 +5,7 @@ import Login from '../views/Login.vue'
 import Maps from '../views/Maps.vue'
 import Level from '../views/Level.vue'
 import Editor from '../views/Editor.vue'
+import Logic from '../views/Logic.vue'
 import Preview from '../views/Preview.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -23,9 +24,9 @@ const routes: Array<RouteRecordRaw> = [
   component: Login
   },
   {
-  path: '/level',
-  name: 'Level',
-  component: Level
+    path: '/level/:id',
+    name: 'Level',
+    component: Level
   },
   {
   path: '/editor',
