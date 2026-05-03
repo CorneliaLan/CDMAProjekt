@@ -10,7 +10,7 @@
           <span
             v-for="tab in tabs"
             :key="tab.path"
-            :class="{ active: route.path === tab.path }"
+            :class="{ active: isActiveTab(tab.path) }"
             @click="goTo(tab.path)"
           >
             {{ tab.name }}
@@ -36,7 +36,7 @@ const router = useRouter()
 
 const tabs = [
   { name: 'Map', path: '/map' },
-  { name: 'Editor', path: '/editor' },
+  { name: 'Editor', path: '/editor/1' },
   { name: 'Preview', path: '/preview' }
 ]
 
@@ -44,6 +44,13 @@ const goTo = (path: string) => {
   if (route.path !== path) {
     router.push(path)
   }
+}
+
+const isActiveTab = (path: string) => {
+  if (path.startsWith('/editor')) {
+    return route.path.startsWith('/editor')
+  }
+  return route.path === path
 }
 </script>
 

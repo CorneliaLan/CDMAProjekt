@@ -1,69 +1,68 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <Header />
 
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
-
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
-          >
-            {{ link.text }}
-          </a>
-        </p>
+    <ion-content class="level-page">
+      <div v-if="activeLevel" class="level-card">
+        <h1>{{ activeLevel.title }}</h1>
+        <p>{{ activeLevel.description }}</p>
+        <p>Map size: {{ activeLevel.grid[0].length }} x {{ activeLevel.grid.length }}</p>
+        <p>Unlocked blocks: {{ activeLevel.unlockedBlockIds.join(', ') }}</p>
+        <ion-button @click="startLevel">Start Level</ion-button>
+      </div>
+      <div v-else class="level-card">
+        <h1>Level not found</h1>
+        <ion-button @click="goToMap">Back to map</ion-button>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import { computed } from 'vue'
+import { IonButton, IonContent, IonPage } from '@ionic/vue'
+import { useRoute, useRouter } from 'vue-router'
+import Header from '@/components/Header.vue'
+import { getLevelById } from '@/core/levels/levelCatalog'
 
-import { Level } from '@/composables/Level'
+const route = useRoute()
+const router = useRouter()
 
-const { title, subtitle, message, link } = Level()
+const levelId = computed(() => Number(route.params.levelId))
+const activeLevel = computed(() => getLevelById(levelId.value))
+
+const startLevel = () => {
+  if (!activeLevel.value) {
+    return
+  }
+  router.push(`/editor/${activeLevel.value.id}`)
+}
+
+const goToMap = () => {
+  router.push('/map')
+}
 </script>
 
 <style scoped>
-#container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.level-page {
+  --padding-start: 24px;
+  --padding-end: 24px;
+  --padding-top: 24px;
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.level-card {
+  max-width: 680px;
+  margin: 16px auto;
+  padding: 24px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
-  margin: 0;
+.level-card h1 {
+  margin: 0 0 8px 0;
 }
 
-#container a {
-  text-decoration: none;
+.level-card p {
+  margin: 8px 0;
 }
 </style>

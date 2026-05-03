@@ -33,9 +33,6 @@ import '@ionic/vue/css/palettes/dark.system.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import { registerDefaultBlocks } from '@/core/setup/registerDefaultBlocks';
-
-registerDefaultBlocks();
 
 const app = createApp(App)
   .use(IonicVue)

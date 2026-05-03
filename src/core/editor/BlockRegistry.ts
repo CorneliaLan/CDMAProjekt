@@ -1,6 +1,6 @@
 import { BaseBlock } from './BaseBlock';
 
-type BlockFactory = () => BaseBlock;
+export type BlockFactory = () => BaseBlock;
 
 /**
  * Registry for block definitions available in the Editor.
@@ -33,5 +33,15 @@ export class BlockRegistry {
 
   public getAllBlocks(): BaseBlock[] {
     return Array.from(this.factories.values()).map((f) => f());
+  }
+
+  public registerMany(factories: BlockFactory[]): void {
+    for (const factory of factories) {
+      this.register(factory);
+    }
+  }
+
+  public clear(): void {
+    this.factories.clear();
   }
 }

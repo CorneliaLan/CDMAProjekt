@@ -37,6 +37,7 @@
               :status="node.status"
               :x="node.x"
               :y="node.y"
+              @select="goToLevel(node.id)"
             />
 
           </div>
@@ -50,6 +51,7 @@
 
 <script setup lang="ts">
 import { IonContent, IonPage } from '@ionic/vue'
+import { useRouter } from 'vue-router'
 
 import Header from '@/components/Header.vue'
 import MapNode from '@/components/MapNode.vue'
@@ -59,6 +61,11 @@ import { colors } from '@/theme/colors'
 import { Maps } from '@/composables/Maps'
 
 const { nodes, connections, getNode } = Maps()
+const router = useRouter()
+
+const goToLevel = (levelId: number) => {
+  router.push(`/level/${levelId}`)
+}
 
 </script>
 
