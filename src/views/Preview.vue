@@ -8,12 +8,21 @@
                  :fullscreen="true"
                  :style="{ '--background': colors.background }">
 
-      <div class="preview-container">
-        <LevelPreview
-          :grid="level"
-          :playerX="playerX"
-          :playerY="playerY"
-        />
+      <div class="page-layout">
+
+        <div class="preview-container">
+          <LevelPreview
+            :grid="level"
+            :playerX="playerX"
+            :playerY="playerY"
+          />
+        </div>
+
+        <!-- CONTROL BAR -->
+        <div class="control-wrapper">
+          <ControlBar />
+        </div>
+
       </div>
 
      </ion-content>
@@ -24,6 +33,7 @@
 import { IonContent, IonPage } from '@ionic/vue'
 import Header from '@/components/Header.vue'
 import LevelPreview from '@/components/LevelPreview.vue'
+import ControlBar from '@/components/ControlBar.vue'
 
 import { colors } from '@/theme/colors'
 
@@ -42,11 +52,31 @@ const playerY = 3
 </script>
 
 <style scoped>
+ion-content {
+  --padding-bottom: 24px;
+}
+
+.page-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 .preview-container {
+  flex: 1;
+
   display: flex;
   justify-content: center;
   align-items: center;
+}
 
-  height: 100%;
+.control-wrapper {
+  display: flex;
+  justify-content: center;
+
+  padding: 16px 16px 24px;
+
+  margin-bottom: env(safe-area-inset-bottom);
 }
 </style>

@@ -18,11 +18,11 @@ export const colors = {
   line: '#bbb',
 
   gridBackground: '#f4f6fb',
-  cellEmpty: '#e9edf7',         
-  cellWall: '#cfd6e6',
+  cellEmpty: '#E7E7F5',         
+  cellWall: '#CCCDF4',
   cellChest: '#e8ded7',
   cellChestBorder: '#d2b48c',
 
-  target: '#9aa6ff',
-  player: '#4f5bd5'
+  target: '#7678EE',
+  player: '#4F52E9'
 }
