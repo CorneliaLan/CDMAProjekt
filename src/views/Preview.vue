@@ -1,69 +1,48 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+
+    <!-- HEADER COMPONENT -->
+    <Header />
 
     <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
 
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
-          >
-            {{ link.text }}
-          </a>
-        </p>
+      <div class="preview-container">
+        <LevelPreview
+          :grid="level"
+          :playerX="playerX"
+          :playerY="playerY"
+        />
       </div>
+
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import { IonContent, IonPage } from '@ionic/vue'
+import Header from '@/components/Header.vue'
+import LevelPreview from '@/components/LevelPreview.vue'
 
-import { Preview } from '@/composables/Preview'
+const level = [
+  [0,1,1,1,1,0,0,0],
+  [0,1,3,0,1,1,0,0],
+  [1,1,0,2,0,1,1,1],
+  [1,0,0,0,2,0,0,1],
+  [1,0,0,0,0,0,0,1],
+  [1,1,3,1,1,1,1,1]
+]
 
-const { title, subtitle, message, link } = Preview()
+// Player Position
+const playerX = 2
+const playerY = 3
 </script>
 
 <style scoped>
-#container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
+.preview-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
-}
-
-#container p {
-  font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
-  margin: 0;
-}
-
-#container a {
-  text-decoration: none;
+  height: 100%;
 }
 </style>
