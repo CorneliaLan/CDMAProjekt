@@ -6,6 +6,7 @@ export type NodeType = {
   id: number
   title: string
   status: NodeStatus
+  complexity: number
   x: number
   y: number
 }
@@ -17,6 +18,7 @@ export function Maps() {
     title: level.title,
     // Progression is intentionally disabled for now; all levels stay selectable.
     status: 'active',
+    complexity: Math.min(3, i + 1),
     x: i % 2 === 0 ? -150 : 150,
     y: -200 + i * 140
   }))

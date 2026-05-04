@@ -18,7 +18,9 @@
         </div>
 
         <div class="icons">
-          ⚙️ 🔔 👤
+          <ion-icon name="settings-outline"></ion-icon>
+          <ion-icon name="notifications-outline"></ion-icon>
+          <ion-icon name="person-circle-outline"></ion-icon>
         </div>
 
       </div>
@@ -30,6 +32,16 @@
 import { IonHeader, IonToolbar } from '@ionic/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { colors } from '@/theme/colors'
+import { IonIcon } from '@ionic/vue'
+
+import { addIcons } from 'ionicons'
+import { settingsOutline, notificationsOutline, personCircleOutline } from 'ionicons/icons'
+
+addIcons({
+  settingsOutline,
+  notificationsOutline,
+  personCircleOutline
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -102,6 +114,24 @@ const isActiveTab = (path: string) => {
   display: flex;
   gap: 10px;
   font-size: 18px;
+}
+
+.icons {
+  display: flex;
+  gap: 14px;
+  font-size: 22px;
+  align-items: center;
+}
+
+.icons ion-icon {
+  cursor: pointer;
+  opacity: 0.8;
+  transition: 0.2s;
+}
+
+.icons ion-icon:hover {
+  opacity: 1;
+  transform: scale(1.1);
 }
 
 </style>

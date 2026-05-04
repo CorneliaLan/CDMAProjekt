@@ -4,7 +4,9 @@
     <!-- HEADER COMPONENT -->
     <Header />
 
-    <ion-content class="map-page">
+    <ion-content class="map-page"
+                 :fullscreen="true"
+                 :style="{ '--background': colors.background }">
 
       <h1 class="title">World Map</h1>
 
@@ -16,7 +18,7 @@
           <div class="world">
 
             <!-- LINES -->
-            <svg class="lines">
+            <svg class="lines" viewBox="0 0 800 800">
 
               <line
                 v-for="(conn, index) in connections"
@@ -37,7 +39,7 @@
               :status="node.status"
               :x="node.x"
               :y="node.y"
-              @select="goToLevel(node.id)"
+              @click="openLevel(node.id)"
             />
 
           </div>
@@ -50,8 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { IonContent, IonPage } from '@ionic/vue'
 import { useRouter } from 'vue-router'
+import { IonContent, IonPage } from '@ionic/vue'
 
 import Header from '@/components/Header.vue'
 import MapNode from '@/components/MapNode.vue'
@@ -63,8 +65,20 @@ import { Maps } from '@/composables/Maps'
 const { nodes, connections, getNode } = Maps()
 const router = useRouter()
 
-const goToLevel = (levelId: number) => {
-  router.push(`/level/${levelId}`)
+
+const openLevel = (id: number) => {
+  const node = nodes.find(n => n.id === id)
+
+  if (!node || node.status === 'locked') {
+    return
+  }
+
+  router.push({
+    name: 'Level',
+    params: {
+      id
+    }
+  })
 }
 
 </script>
@@ -98,28 +112,34 @@ const goToLevel = (levelId: number) => {
 
   font-size: 28px;
   background: transparent;
+
+  color: v-bind('colors.text');
 }
 
 /* WORLD CENTER */
 .world {
   position: absolute;
-  top: 50%;
+  top: 35%;
   left: 50%;
+
+  width: 800px;
+  height: 800px;
 }
 
 /* LINES */
 .lines {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
   overflow: visible;
+  pointer-events: none;
 }
 
 .lines line {
   stroke: v-bind('colors.line');
-  stroke-width: 3;
+  stroke-width: 2.5;
 }
 
 </style>
