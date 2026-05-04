@@ -9,10 +9,6 @@
       <div class="split-layout">
         <section
           class="pane left-pane"
-          @pointerdown="startLongPress"
-          @pointerup="cancelLongPress"
-          @pointerleave="cancelLongPress"
-          @pointercancel="cancelLongPress"
         >
           <div ref="reteContainer" class="rete-editor"></div>
 
@@ -75,33 +71,13 @@ const reteContainer = ref<HTMLElement | null>(null)
 let editor: NodeEditor<Schemes> | null = null
 let area: AreaPlugin<Schemes, AreaExtra> | null = null
 let nodeIndex = 0
+let lastNode: ClassicPreset.Node | null = null
 
 const {
   isOpen: isRadialMenuOpen,
   open: openRadialMenu,
   close: closeRadialMenu,
-  startLongPress,
-  cancelLongPress
 } = useRadialMenu()
-/*
-const handlePanePointerDown = (event: PointerEvent) => {
-  const target = event.target as HTMLElement
-
-  const isReteInteraction = target.closest(
-    '.node, .socket, .input, .output, .control, .connection'
-  )
-
-  const isUiInteraction = target.closest(
-    '.floating-plus, .radial-menu-overlay'
-  )
-
-  if (isReteInteraction || isUiInteraction) {
-    cancelLongPress()
-    return
-  }
-
-  startLongPress()
-}*/
 
 const createLevelStartNode = async () => {
   if (!editor || !area) return
@@ -118,6 +94,7 @@ const createLevelStartNode = async () => {
     y: 80
   })
 
+  lastNode = node
   nodeIndex = 1
 }
 
@@ -174,10 +151,22 @@ const addReteNode = async (payload: BlueprintPayload) => {
   await editor.addNode(node)
 
   await area.translate(node.id, {
-    x: 80 + nodeIndex * 40,
-    y: 80 + nodeIndex * 40
+    x: 80 + nodeIndex * 160,
+    y: 80
   })
 
+  if (lastNode && !isLevelStart) {
+    const connection = new ClassicPreset.Connection(
+      lastNode,
+      'out',
+      node,
+      'in'
+    )
+
+    await editor.addConnection(connection)
+  }
+
+  lastNode = node
   nodeIndex++
   closeRadialMenu()
 }
