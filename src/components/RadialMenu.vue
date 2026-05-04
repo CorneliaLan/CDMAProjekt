@@ -89,7 +89,8 @@ const items = [
     icon: flashOutline,
     position: 'bottom',
     color: '#4a67a8',
-    actions: ['Level Start', 'Level End'],
+   //actions: ['Level Start', 'Level End'],
+    actions: ['Level End'],
   },
   {
     label: 'Movement',

@@ -83,7 +83,7 @@ const {
   startLongPress,
   cancelLongPress
 } = useRadialMenu()
-
+/*
 const handlePanePointerDown = (event: PointerEvent) => {
   const target = event.target as HTMLElement
 
@@ -101,6 +101,24 @@ const handlePanePointerDown = (event: PointerEvent) => {
   }
 
   startLongPress()
+}*/
+
+const createLevelStartNode = async () => {
+  if (!editor || !area) return
+
+  const socket = new ClassicPreset.Socket('level')
+  const node = new ClassicPreset.Node('Level Start')
+
+  node.addOutput('out', new ClassicPreset.Output(socket))
+
+  await editor.addNode(node)
+
+  await area.translate(node.id, {
+    x: 80,
+    y: 80
+  })
+
+  nodeIndex = 1
 }
 
 onMounted(async () => {
@@ -124,6 +142,8 @@ onMounted(async () => {
   })
 
   AreaExtensions.simpleNodesOrder(area)
+
+  await createLevelStartNode()
 })
 
 onBeforeUnmount(() => {
