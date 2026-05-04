@@ -1,69 +1,280 @@
 <template>
   <ion-page>
-    <ion-header :translucent="true">
-      <ion-toolbar>
-        <ion-title>{{ title }}</ion-title>
-      </ion-toolbar>
-    </ion-header>
+    <Header />
 
-    <ion-content :fullscreen="true">
-      <ion-header collapse="condense">
-        <ion-toolbar>
-          <ion-title size="large">{{ subtitle }}</ion-title>
-        </ion-toolbar>
-      </ion-header>
+    <ion-content :fullscreen="true"
+                 :style="{ '--background': colors.background }">
+      <div class="level-page">
+        <div class="level-card">
+          <section class="level-left">
+            <div class="status-badge">SYSTEM STATUS: STANDBY</div>
 
-      <div id="container">
-        <strong>{{ message }}</strong>
-        <p>
-          Start with Ionic
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            :href="link.url"
-          >
-            {{ link.text }}
-          </a>
-        </p>
+            <h1>{{ currentLevel?.title ?? 'Level' }}</h1>
+            <p class="subtitle">
+              {{ currentLevel?.status ?? 'Unknown' }}
+            </p>
+
+            <div class="complexity">
+              <span>COMPLEXITY</span>
+
+              <div class="complexity-bars">
+                <div
+                  v-for="i in 3"
+                  :key="i"
+                  class="bar"
+                  :class="{ active: i <= complexity }"
+                ></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="level-right">
+            <div class="objective-title">
+              <span></span>
+              MISSION OBJECTIVE
+            </div>
+
+            <div class="objective-content"></div>
+
+            <div class="actions">
+              <button class="back-button" @click="goToMap">
+                <ion-icon :icon="arrowBackOutline" />
+                Back to Map
+              </button>
+
+              <button class="start-button" @click="startLevel">
+                START LEVEL
+                <ion-icon :icon="playOutline" />
+              </button>
+            </div>
+          </section>
+        </div>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
-import {IonContent, IonHeader, IonPage, IonTitle, IonToolbar} from '@ionic/vue'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { IonContent, IonIcon, IonPage } from '@ionic/vue'
+import {
+  arrowBackOutline,
+  arrowForwardOutline,
+  playOutline,
+  serverOutline,
+  terminalOutline,
+} from 'ionicons/icons'
+import Header from '@/components/Header.vue'
+import { Maps } from '@/composables/Maps'
+import { colors } from '@/theme/colors'
+const router = useRouter()
+const route = useRoute()
 
-import { Level } from '@/composables/Level'
+const { nodes } = Maps()
 
-const { title, subtitle, message, link } = Level()
+const levelId = computed(() => String(route.params.id))
+
+const currentLevel = computed(() => {
+  return nodes.find(node => String(node.id) === levelId.value)
+})
+
+const complexity = computed(() => currentLevel.value?.complexity ?? 1)
+
+const goToMap = () => {
+  router.push({ name: 'Map' })
+}
+
+const startLevel = () => {
+  router.push({
+    name: 'Editor',
+    params: {
+      id: levelId.value
+    }
+  })
+}
 </script>
 
 <style scoped>
-#container {
-  text-align: center;
-  
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+.level-page {
+  min-height: 100%;
+  padding: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: v-bind('colors.background');
 }
 
-#container strong {
-  font-size: 20px;
-  line-height: 26px;
+.level-card {
+  width: min(1280px, 100%);
+  min-height: 540px;
+  display: grid;
+  grid-template-columns: 42% 58%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 18px 45px v-bind('colors.line');
 }
 
-#container p {
+.level-left {
+  padding: 58px;
+  background: v-bind('colors.primaryLight');
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 10px 18px;
+  border-radius: 16px;
+  background: v-bind('colors.secondary');
+  color: v-bind('colors.text');
   font-size: 16px;
-  line-height: 22px;
-  
-  color: #8c8c8c;
-  
-  margin: 0;
+  font-weight: 800;
+  letter-spacing: 2px;
 }
 
-#container a {
-  text-decoration: none;
+h1 {
+  margin: 28px 0 8px;
+  color: v-bind('colors.primary');
+  font-size: 68px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.subtitle {
+  margin: 0;
+  color: v-bind('colors.text');
+  font-size: 26px;
+}
+
+.icon-row {
+  margin-top: 76px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.complexity {
+  margin-top: 72px;
+}
+
+.complexity span {
+  color: v-bind('colors.text');
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.complexity-bars {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.bar {
+  width: 46px;
+  height: 8px;
+  border-radius: 10px;
+  background: v-bind('colors.background');
+  border: 1px solid v-bind('colors.textMuted');
+}
+
+.bar.active {
+  background: v-bind('colors.active');
+}
+
+.level-right {
+  padding: 62px 58px 58px;
+  background: v-bind('colors.background');
+  display: flex;
+  flex-direction: column;
+}
+
+.objective-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: v-bind('colors.text');
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 4px;
+}
+
+.objective-title span {
+  width: 26px;
+  height: 2px;
+  background: v-bind('colors.text');
+}
+
+.objective-content {
+  flex: 1;
+  border-bottom: 1px solid v-bind('colors.textMuted');
+}
+
+.actions {
+  padding-top: 46px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.back-button,
+.start-button {
+  border: none;
+  background: transparent;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-button {
+  color: v-bind('colors.text');
+  font-size: 20px;
+}
+
+.start-button {
+  padding: 24px 42px;
+  background: v-bind('colors.primary');
+  color: v-bind('colors.background');
+  font-size: 22px;
+  box-shadow: 0 12px 24px rgba(39, 51, 74, 0.26);
+  border-radius: 16px;
+}
+
+@media (max-width: 767px) {
+  .level-page {
+    padding: 24px;
+  }
+
+  .level-card {
+    grid-template-columns: 1fr;
+  }
+
+  .level-left,
+  .level-right {
+    padding: 32px 24px;
+  }
+
+  h1 {
+    font-size: 48px;
+  }
+
+  .subtitle {
+    font-size: 20px;
+  }
+
+  .icon-row {
+    margin-top: 48px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+  }
+
+  .start-button {
+    justify-content: center;
+  }
 }
 </style>
