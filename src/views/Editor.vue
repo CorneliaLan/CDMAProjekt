@@ -23,6 +23,18 @@
           >
             <RadialMenu @click.stop @select="addReteNode" />
           </div>
+          <div ref="reteContainer" class="rete-editor"></div>
+            <button
+              v-if="deleteButtonPosition"
+              class="node-delete-button"
+              :style="{
+                left: `${deleteButtonPosition.x}px`,
+                top: `${deleteButtonPosition.y}px`
+              }"
+              @click.stop="deleteSelectedNode"
+            >
+              🗑
+            </button>
         </section>
 
         <section class="pane right-pane">
@@ -89,6 +101,10 @@ let nodeIndex = 0
 let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 
+/// Delete functionality
+let selectedNode: FlowNode | null = null
+const deleteButtonPosition = ref<{ x: number; y: number } | null>(null)
+
 const {
   isOpen: isRadialMenuOpen,
   open: openRadialMenu,
@@ -143,8 +159,77 @@ onMounted(async () => {
 
   AreaExtensions.simpleNodesOrder(area)
 
+  area.addPipe((context) => {
+    if (context.type === 'nodepicked') {
+      const node = editor?.getNode(context.data.id) as FlowNode | undefined
+
+      if (node) {
+        selectedNode = node
+        updateDeleteButtonPosition(node)
+      }
+    }
+
+    if (context.type === 'pointerdown') {
+      const target = context.data.event.target as HTMLElement
+
+      if (!target.closest('.node') && !target.closest('.node-delete-button')) {
+        selectedNode = null
+        deleteButtonPosition.value = null
+      }
+    }
+
+    return context
+  })
+
   await createLevelStartNode()
 })
+
+const updateDeleteButtonPosition = (node: FlowNode) => {
+  if (!area || !reteContainer.value) return
+
+  const view = area.nodeViews.get(node.id)
+  if (!view) return
+
+  const nodeElement = view.element as HTMLElement
+  const nodeRect = nodeElement.getBoundingClientRect()
+  const paneRect = reteContainer.value.getBoundingClientRect()
+
+  deleteButtonPosition.value = {
+    x: nodeRect.right - paneRect.left,
+    y: nodeRect.top - paneRect.top
+  }
+}
+
+const deleteSelectedNode = async () => {
+  if (!editor || !selectedNode) return
+
+  const node = selectedNode
+
+  const connections = editor
+    .getConnections()
+    .filter((connection) => {
+      return (
+        connection.source === node.id ||
+        connection.target === node.id
+      )
+    })
+
+  for (const connection of connections) {
+    await editor.removeConnection(connection.id)
+  }
+
+  await editor.removeNode(node.id)
+
+  if (lastNode?.id === node.id) {
+    const nodes = editor.getNodes() as FlowNode[]
+    lastNode = nodes[nodes.length - 1] ?? null
+  }
+
+  selectedNode = null
+  deleteButtonPosition.value = null
+
+  await arrangeNodes()
+}
 
 const arrangeNodes = async () => {
   if (!arrange || !area) return
@@ -307,5 +392,26 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   background: rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(2px);
+}
+
+.node-delete-button {
+  position: absolute;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+
+  width: 36px;
+  height: 36px;
+
+  border: none;
+  border-radius: 12px;
+  background: #e53935;
+  color: #ffffff;
+  font-size: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
 }
 </style>

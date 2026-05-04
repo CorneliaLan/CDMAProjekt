@@ -365,7 +365,7 @@ const onActionClick = (item: any, action: string) => {
     top: 245px;
   }
 
-  .menu-item.bottom .submenu {
+  /*.menu-item.bottom .submenu {
     position: absolute;
     top: 50%;
     left: 100%;
@@ -373,7 +373,7 @@ const onActionClick = (item: any, action: string) => {
     margin-left: 8px;
 
     transform: translateY(-50%);
-  }
+  }*/
 
   .menu-item.left {
     top: 150px;
