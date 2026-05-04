@@ -71,7 +71,7 @@ import { BlockCategory } from '@/core/editor/BlockCategories';
 
 const route = useRoute();
 const router = useRouter();
-const levelId = computed(() => Number(route.params.levelId));
+const levelId = computed(() => Number(route.params.id));
 const {
   level,
   gameState,

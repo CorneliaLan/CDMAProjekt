@@ -5,7 +5,6 @@ import Login from '../views/Login.vue'
 import Maps from '../views/Maps.vue'
 import Level from '../views/Level.vue'
 import Editor from '../views/Editor.vue'
-import Logic from '../views/Logic.vue'
 import Preview from '../views/Preview.vue'
 
 const routes: Array<RouteRecordRaw> = [
@@ -14,14 +13,14 @@ const routes: Array<RouteRecordRaw> = [
     redirect: '/map'
   },
   {
-  path: '/map',
-  name: 'Map',
-  component: Maps
+    path: '/map',
+    name: 'Map',
+    component: Maps
   },
   {
-  path: '/login',
-  name: 'Login',
-  component: Login
+    path: '/login',
+    name: 'Login',
+    component: Login
   },
   {
     path: '/level/:id',
@@ -29,14 +28,14 @@ const routes: Array<RouteRecordRaw> = [
     component: Level
   },
   {
-  path: '/editor/:id',
-  name: 'Editor',
-  component: Editor
+    path: '/editor/:id',
+    name: 'Editor',
+    component: Editor
   },
   {
-  path: '/preview',
-  name: 'Preview',
-  component: Preview
+    path: '/preview',
+    name: 'Preview',
+    component: Preview
   }
 ]
 
