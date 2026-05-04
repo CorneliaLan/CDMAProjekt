@@ -15,5 +15,14 @@ export const colors = {
   active: '#7678EE',
   locked: '#f5f6ff',
 
-  line: '#bbb'
+  line: '#bbb',
+
+  gridBackground: '#f4f6fb',
+  cellEmpty: '#E7E7F5',         
+  cellWall: '#CCCDF4',
+  cellChest: '#e8ded7',
+  cellChestBorder: '#d2b48c',
+
+  target: '#7678EE',
+  player: '#4F52E9'
 }

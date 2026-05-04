@@ -2,10 +2,15 @@
   <div
     class="node"
     :class="status"
+    :role="status === 'locked' ? undefined : 'button'"
+    :tabindex="status === 'locked' ? -1 : 0"
     :style="{
       left: x + 'px',
       top: y + 'px'
     }"
+    @click="emitSelect"
+    @keydown.enter.prevent="emitSelect"
+    @keydown.space.prevent="emitSelect"
   >
     <div class="diamond">
       <div v-if="status === 'complete'" class="icon-circle">
@@ -34,12 +39,23 @@ addIcons({
   lockClosed
 })
 
-defineProps<{
+const props = defineProps<{
   title: string
   status: 'complete' | 'active' | 'locked'
   x: number
   y: number
 }>()
+
+const emit = defineEmits<{
+  (e: 'select'): void
+}>()
+
+const emitSelect = () => {
+  if (props.status === 'locked') {
+    return
+  }
+  emit('select')
+}
 </script>
 
 <style scoped>
@@ -53,6 +69,11 @@ defineProps<{
 
 .locked{
   cursor: not-allowed;
+}
+
+.complete,
+.active {
+  cursor: pointer;
 }
 
 .diamond {
@@ -77,7 +98,7 @@ defineProps<{
   background: v-bind('colors.active');
   color: white;
   border: 4px solid v-bind('colors.primaryBorder');
-  
+
   box-shadow: 0 0 0 6px v-bind('colors.active');
 }
 

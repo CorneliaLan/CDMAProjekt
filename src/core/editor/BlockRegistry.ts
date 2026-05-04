@@ -1,11 +1,13 @@
 import { BaseBlock } from './BaseBlock';
 
+export type BlockFactory = () => BaseBlock;
+
 /**
  * Registry for block definitions available in the Editor.
  */
 export class BlockRegistry {
   private static instance: BlockRegistry;
-  private readonly blocks: Map<string, BaseBlock> = new Map();
+  private readonly factories: Map<string, BlockFactory> = new Map();
 
   private constructor() {}
 
@@ -16,19 +18,30 @@ export class BlockRegistry {
     return BlockRegistry.instance;
   }
 
-  public register(block: BaseBlock): void {
-    if (this.blocks.has(block.id)) {
-      console.warn(`Block with id ${block.id} is already registered.`);
+  public register(factory: BlockFactory): void {
+    const probe = factory();
+    if (this.factories.has(probe.id)) {
+      console.warn(`Block with id ${probe.id} is already registered.`);
       return;
     }
-    this.blocks.set(block.id, block);
+    this.factories.set(probe.id, factory);
   }
 
   public getBlock(id: string): BaseBlock | undefined {
-    return this.blocks.get(id);
+    return this.factories.get(id)?.();
   }
 
   public getAllBlocks(): BaseBlock[] {
-    return Array.from(this.blocks.values());
+    return Array.from(this.factories.values()).map((f) => f());
+  }
+
+  public registerMany(factories: BlockFactory[]): void {
+    for (const factory of factories) {
+      this.register(factory);
+    }
+  }
+
+  public clear(): void {
+    this.factories.clear();
   }
 }
