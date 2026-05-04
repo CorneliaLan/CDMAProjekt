@@ -48,11 +48,25 @@ import { NodeEditor, ClassicPreset } from 'rete'
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin'
 import { VuePlugin, Presets, VueArea2D } from 'rete-vue-plugin'
-
+import {
+  AutoArrangePlugin,
+  Presets as ArrangePresets,
+  ArrangeAppliers
+} from 'rete-auto-arrange-plugin'
+/*
 type Schemes = ClassicPreset.GetSchemes<
   ClassicPreset.Node,
   ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>
->
+>*/
+
+class FlowNode extends ClassicPreset.Node {
+  width = 180
+  height = 120
+}
+
+class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
+
+type Schemes = ClassicPreset.GetSchemes<FlowNode, FlowConnection>
 
 type AreaExtra = VueArea2D<Schemes>
 
@@ -71,7 +85,9 @@ const reteContainer = ref<HTMLElement | null>(null)
 let editor: NodeEditor<Schemes> | null = null
 let area: AreaPlugin<Schemes, AreaExtra> | null = null
 let nodeIndex = 0
-let lastNode: ClassicPreset.Node | null = null
+//let lastNode: ClassicPreset.Node | null = null
+let lastNode: FlowNode | null = null
+let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 
 const {
   isOpen: isRadialMenuOpen,
@@ -83,7 +99,8 @@ const createLevelStartNode = async () => {
   if (!editor || !area) return
 
   const socket = new ClassicPreset.Socket('level')
-  const node = new ClassicPreset.Node('Level Start')
+  //const node = new ClassicPreset.Node('Level Start')
+  const node = new FlowNode('Level Start')
 
   node.addOutput('out', new ClassicPreset.Output(socket))
 
@@ -96,6 +113,7 @@ const createLevelStartNode = async () => {
 
   lastNode = node
   nodeIndex = 1
+  await arrangeNodes()
 }
 
 onMounted(async () => {
@@ -113,6 +131,11 @@ onMounted(async () => {
   editor.use(area)
   area.use(connection)
   area.use(render)
+  arrange = new AutoArrangePlugin<Schemes, AreaExtra>()
+
+  arrange.addPreset(ArrangePresets.classic.setup())
+
+  area.use(arrange)
 
   AreaExtensions.selectableNodes(area, AreaExtensions.selector(), {
     accumulating: AreaExtensions.accumulateOnCtrl()
@@ -122,6 +145,27 @@ onMounted(async () => {
 
   await createLevelStartNode()
 })
+
+const arrangeNodes = async () => {
+  if (!arrange || !area) return
+
+  const applier = new ArrangeAppliers.TransitionApplier<Schemes, AreaExtra>({
+    duration: 300,
+    timingFunction: (t) => t
+  })
+
+  await arrange.layout({
+    applier,
+    options: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'RIGHT',
+      'elk.spacing.nodeNode': 80,
+      'elk.layered.spacing.nodeNodeBetweenLayers': 120
+    }
+  })
+
+  await AreaExtensions.zoomAt(area, editor!.getNodes())
+}
 
 onBeforeUnmount(() => {
   area?.destroy()
@@ -133,7 +177,8 @@ const addReteNode = async (payload: BlueprintPayload) => {
   if (!editor || !area) return
 
   const socket = new ClassicPreset.Socket(payload.category)
-  const node = new ClassicPreset.Node(payload.action)
+  //const node = new ClassicPreset.Node(payload.action)
+  const node = new FlowNode(payload.action)
 
   const action = payload.action.toLowerCase()
 
@@ -156,7 +201,14 @@ const addReteNode = async (payload: BlueprintPayload) => {
   })
 
   if (lastNode && !isLevelStart) {
-    const connection = new ClassicPreset.Connection(
+   /* const connection = new ClassicPreset.Connection(
+      lastNode,
+      'out',
+      node,
+      'in'
+    )*/
+
+    const connection = new FlowConnection(
       lastNode,
       'out',
       node,
@@ -168,6 +220,9 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   lastNode = node
   nodeIndex++
+
+  await arrangeNodes()
+
   closeRadialMenu()
 }
 </script>
