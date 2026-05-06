@@ -10,8 +10,6 @@
         <section
           class="pane left-pane"
         >
-          <div ref="reteContainer" class="rete-editor"></div>
-
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
@@ -55,6 +53,7 @@ import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
 import { useRadialMenu } from '@/composables/useRadialMenu'
 import { colors } from '@/theme/colors'
+import CustomNode from '@/components/CustomNode.vue'
 
 import { NodeEditor, ClassicPreset } from 'rete'
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
@@ -65,15 +64,15 @@ import {
   Presets as ArrangePresets,
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
-/*
-type Schemes = ClassicPreset.GetSchemes<
-  ClassicPreset.Node,
-  ClassicPreset.Connection<ClassicPreset.Node, ClassicPreset.Node>
->*/
 
 class FlowNode extends ClassicPreset.Node {
   width = 180
   height = 120
+
+  category = 'default'
+  color = '#8799f6'
+  textColor = '#ffffff'
+  deletable = true    
 }
 
 class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
@@ -97,7 +96,6 @@ const reteContainer = ref<HTMLElement | null>(null)
 let editor: NodeEditor<Schemes> | null = null
 let area: AreaPlugin<Schemes, AreaExtra> | null = null
 let nodeIndex = 0
-//let lastNode: ClassicPreset.Node | null = null
 let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 
@@ -115,8 +113,12 @@ const createLevelStartNode = async () => {
   if (!editor || !area) return
 
   const socket = new ClassicPreset.Socket('level')
-  //const node = new ClassicPreset.Node('Level Start')
   const node = new FlowNode('Level Start')
+
+  node.category = 'Events'
+  node.color = '#4a67a8'
+  node.textColor = '#ffffff'
+  node.deletable = false
 
   node.addOutput('out', new ClassicPreset.Output(socket))
 
@@ -141,7 +143,17 @@ onMounted(async () => {
   const connection = new ConnectionPlugin<Schemes, AreaExtra>()
   const render = new VuePlugin<Schemes, AreaExtra>()
 
-  render.addPreset(Presets.classic.setup())
+  //render.addPreset(Presets.classic.setup())
+  render.addPreset(
+    Presets.classic.setup({
+      customize: {
+        node() {
+          return CustomNode
+
+        }
+      }
+    })
+  )
   connection.addPreset(ConnectionPresets.classic.setup())
 
   editor.use(area)
@@ -165,7 +177,12 @@ onMounted(async () => {
 
       if (node) {
         selectedNode = node
-        updateDeleteButtonPosition(node)
+
+        if (node.deletable) {
+          updateDeleteButtonPosition(node)
+        } else {
+          deleteButtonPosition.value = null
+        }
       }
     }
 
@@ -201,7 +218,7 @@ const updateDeleteButtonPosition = (node: FlowNode) => {
 }
 
 const deleteSelectedNode = async () => {
-  if (!editor || !selectedNode) return
+  if (!editor || !selectedNode || !selectedNode.deletable) return
 
   const node = selectedNode
 
@@ -262,8 +279,11 @@ const addReteNode = async (payload: BlueprintPayload) => {
   if (!editor || !area) return
 
   const socket = new ClassicPreset.Socket(payload.category)
-  //const node = new ClassicPreset.Node(payload.action)
   const node = new FlowNode(payload.action)
+
+  node.category = payload.category
+  node.color = payload.color
+  node.textColor = payload.textColor
 
   const action = payload.action.toLowerCase()
 
@@ -286,12 +306,6 @@ const addReteNode = async (payload: BlueprintPayload) => {
   })
 
   if (lastNode && !isLevelStart) {
-   /* const connection = new ClassicPreset.Connection(
-      lastNode,
-      'out',
-      node,
-      'in'
-    )*/
 
     const connection = new FlowConnection(
       lastNode,
@@ -413,5 +427,15 @@ const addReteNode = async (payload: BlueprintPayload) => {
   justify-content: center;
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+:deep(.node) {
+  border-radius: 16px !important;
+  border: 2px solid rgba(0, 0, 0, 0.22) !important;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18) !important;
+}
+
+:deep(.node .title) {
+  font-weight: 700 !important;
 }
 </style>
