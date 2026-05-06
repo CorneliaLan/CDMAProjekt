@@ -56,6 +56,7 @@ import {
   flashOutline,
   moveOutline,
 } from 'ionicons/icons'
+import { colors } from '@/theme/colors'
 
 const activeItem = ref<string | null>(null)
 
@@ -149,7 +150,7 @@ const onActionClick = (item: any, action: string) => {
   transform: translateX(-50%);
   background-image: linear-gradient(
     to right,
-    rgba(55, 80, 110, 0.75) 55%,
+    v-bind('colors.move') 55%,
     transparent 45%
   );
   background-size: 10px 2px;
@@ -163,7 +164,7 @@ const onActionClick = (item: any, action: string) => {
   transform: translateY(-50%);
   background-image: linear-gradient(
     to bottom,
-    rgba(55, 80, 110, 0.75) 55%,
+    v-bind('colors.move') 55%,
     transparent 45%
   );
   background-size: 2px 10px;
@@ -179,7 +180,7 @@ const onActionClick = (item: any, action: string) => {
   border: none;
   border-radius: 16px;
   background: #ffffff;
-  color: #526077;
+  color: v-bind('colors.text');
   font-size: 25px;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
   z-index: 2;
@@ -230,23 +231,23 @@ const onActionClick = (item: any, action: string) => {
   width: 70px;
   height: 78px;
   border-radius: 20px;
-  background: #4a67a8;
+  background: v-bind('colors.events');
   color: #ffffff;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
   transition: all 0.2s ease;
 }
 
 .menu-item.top .icon-button {
-  background: #3e3fd3;
+  background: v-bind('colors.repeat');
 }
 
 .menu-item.right .icon-button {
-  background: #dcd7ff;
-  color: #4545d7;
+  background: v-bind('colors.condition');
+  color: v-bind('colors.repeat');
 }
 
 .menu-item.left .icon-button {
-  background: #535e72;
+  background: v-bind('colors.move');
 }
 
 .icon-button ion-icon {
@@ -260,16 +261,11 @@ const onActionClick = (item: any, action: string) => {
   text-align: center;
   border-radius: 14px;
   background: #ffffff;
-  color: #3f46d8;
+  color: v-bind('colors.text');
   font-size: 16px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(55, 70, 95, 0.18);
   transition: all 0.2s ease;
-}
-
-.menu-item.left .label,
-.menu-item.bottom .label {
-  color: #526077;
 }
 
 /* Active Effekt */
@@ -364,16 +360,6 @@ const onActionClick = (item: any, action: string) => {
   .menu-item.bottom {
     top: 245px;
   }
-
-  /*.menu-item.bottom .submenu {
-    position: absolute;
-    top: 50%;
-    left: 100%;
-    margin-top: 0;
-    margin-left: 8px;
-
-    transform: translateY(-50%);
-  }*/
 
   .menu-item.left {
     top: 150px;

@@ -8,7 +8,7 @@ export const colors = {
   background: '#ffffff',
   surface: '#f5f6ff',
 
-  text: '#1e293b',
+  text: '#27303E',
   textMuted: '#888',
 
   complete: '#e1e0ff',
@@ -17,12 +17,8 @@ export const colors = {
 
   line: '#bbb',
 
-  gridBackground: '#f4f6fb',
-  cellEmpty: '#E7E7F5',         
-  cellWall: '#CCCDF4',
-  cellChest: '#e8ded7',
-  cellChestBorder: '#d2b48c',
-
-  target: '#7678EE',
-  player: '#4F52E9'
+  repeat: '#5b5eeb',
+  move: '#595971',
+  events: '#4E4F9D',
+  condition: '#E1E0FF'
 }

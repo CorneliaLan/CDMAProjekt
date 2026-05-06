@@ -21,13 +21,10 @@
           :key="input.key"
           class="socket-row"
         >
-          <RefSocket
-            name="input-socket"
+          <ClassicSocket
             :emit="emit"
-            :side="'input'"
-            :socket-key="input.key"
-            :payload="input.socket"
-            :data="input"
+            :socket="input.socket"
+            side="input"
           />
         </div>
       </div>
@@ -39,13 +36,10 @@
           :key="output.key"
           class="socket-row"
         >
-          <RefSocket
-            name="output-socket"
+          <ClassicSocket
             :emit="emit"
-            :side="'output'"
-            :socket-key="output.key"
-            :payload="output.socket"
-            :data="output"
+            :socket="output.socket"
+            side="output"
           />
         </div>
       </div>
@@ -55,6 +49,7 @@
 
 <script setup lang="ts">
 import { Presets } from 'rete-vue-plugin'
+import { colors } from '@/theme/colors'
 
 const ClassicSocket = Presets.classic.Socket
 const ClassicInput = Presets.classic.Input
@@ -73,6 +68,16 @@ const props = defineProps<{
   inputs: any[]
   outputs: any[]
 }>()
+
+// const inputs = Object.entries(props.data.inputs).map(([key, input]) => ({
+//   key,
+//   ...(input as any)
+// }))
+
+// const outputs = Object.entries(props.data.outputs).map(([key, output]) => ({
+//   key,
+//   ...(output as any)
+// }))
 </script>
 
 <style scoped>
@@ -122,18 +127,18 @@ const props = defineProps<{
 /* Category Styles */
 
 .custom-node.Loops {
-  border-left: 6px solid #3e3fd3;
+  border-left: 6px solid v-bind('colors.repeat');
 }
 
 .custom-node.Conditions {
-  border-left: 6px solid #4545d7;
+  border-left: 6px solid v-bind('colors.condition');
 }
 
 .custom-node.Events {
-  border-left: 6px solid #4a67a8;
+  border-left: 6px solid v-bind('colors.events');
 }
 
 .custom-node.Movement {
-  border-left: 6px solid #535e72;
+  border-left: 6px solid v-bind('colors.move');
 }
 </style>
