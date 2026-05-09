@@ -11,6 +11,7 @@ const registry = BlockRegistry.getInstance();
 
 type AvailableBlock = {
   id: string
+  label: string
   category: BlockCategory
 }
 
@@ -44,6 +45,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     registerBlocksByIds(level.value.unlockedBlockIds);
     availableBlocks.value = registry.getAllBlocks().map((block) => ({
       id: block.id,
+      label: block.label,
       category: block.category
     }));
     const newEngine = createEngine(level.value);

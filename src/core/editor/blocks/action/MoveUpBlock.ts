@@ -4,6 +4,7 @@ import { ExecutionContext } from '@/core/engine/ExecutionContext';
 
 export class MoveUpBlock extends BaseBlock {
   readonly id = 'move-up';
+  readonly label = 'Move Up';
   readonly category = BlockCategory.ACTION;
 
   execute(context: ExecutionContext): void {

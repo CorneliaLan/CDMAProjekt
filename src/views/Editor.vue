@@ -19,8 +19,11 @@
             class="radial-menu-overlay"
             @click.self="closeRadialMenu"
           >
-            <RadialMenu @click.stop @select="addReteNode" />
-          </div>
+          <RadialMenu
+            :available-blocks="availableBlocks"
+            @click.stop
+            @select="addReteNode"
+          />          </div>
           <div ref="reteContainer" class="rete-editor"></div>
             <button
               v-if="deleteButtonPosition"
@@ -66,6 +69,7 @@ import {
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
+import { useEditorFacade } from '@/composables/useEditorFacade'
 
 class FlowNode extends ClassicPreset.Node {
   width = 180
@@ -85,13 +89,24 @@ type AreaExtra = VueArea2D<Schemes>
 
 type BlueprintPayload = {
   category: string
-  action: string
+  actionId: string
+  actionLabel: string
   color: string
   textColor: string
 }
 
 const route = useRoute()
 const levelId = computed(() => Number(route.params.id))
+
+const {
+  level,
+  gameState,
+  availableBlocks,
+  program,
+  addProgramBlock,
+  deleteProgramBlock,
+  runProgram
+} = useEditorFacade(levelId)
 
 const reteContainer = ref<HTMLElement | null>(null)
 
@@ -281,13 +296,13 @@ const addReteNode = async (payload: BlueprintPayload) => {
   if (!editor || !area) return
 
   const socket = new ClassicPreset.Socket(payload.category)
-  const node = new FlowNode(payload.action)
+  const node = new FlowNode(payload.actionLabel)
 
   node.category = payload.category
   node.color = payload.color
   node.textColor = payload.textColor
 
-  const action = payload.action.toLowerCase()
+  const action = payload.actionLabel.toLowerCase()
 
   const isLevelStart = action.includes('level start')
   const isLevelEnd = action.includes('level end')

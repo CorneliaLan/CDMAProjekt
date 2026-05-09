@@ -34,11 +34,11 @@
         >
         <button
           v-for="action in item.actions"
-          :key="action"
+          :key="action.id"
           class="submenu-button"
           @click.stop="onActionClick(item, action)"
         >
-          {{ action }}
+          {{ action.label }}
         </button>
         </div>
       </div>
@@ -47,7 +47,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { IonButton, IonIcon } from '@ionic/vue'
 import {
   addOutline,
@@ -57,51 +56,120 @@ import {
   moveOutline,
 } from 'ionicons/icons'
 import { colors } from '@/theme/colors'
+import { computed, ref } from 'vue'
+import type { BlockCategory } from '@/core/editor/BlockCategories'
 
 const activeItem = ref<string | null>(null)
+
+const props = defineProps<{
+  availableBlocks: {
+    id: string
+    label: string
+    category: BlockCategory
+  }[]
+}>()
 
 const emit = defineEmits<{
   select: [payload: {
     category: string
-    action: string
+    actionId: string
+    actionLabel: string
     color: string
     textColor?: string
   }]
 }>()
 
-const items = [
-  {
+// const items = [
+//   {
+//     label: 'Loops',
+//     icon: repeatOutline,
+//     position: 'top',
+//     color: '#3e3fd3',
+//     actions: ['Repeat'],
+//   },
+//   {
+//     label: 'Conditions',
+//     icon: gitBranchOutline,
+//     position: 'right',
+//     color: '#dcd7ff',
+//     textColor: '#4545d7',
+//     actions: ['If Win', 'If Lose'],
+//   },
+//   {
+//     label: 'Events',
+//     icon: flashOutline,
+//     position: 'bottom',
+//     color: '#4a67a8',
+//    //actions: ['Level Start', 'Level End'],
+//     actions: ['Level End'],
+//   },
+//   {
+//     label: 'Movement',
+//     icon: moveOutline,
+//     position: 'left',
+//     color: '#535e72',
+//     actions: ['Move Up', 'Move Down', 'Move Left', 'Move Right'],
+//   },
+// ]
+const categoryMeta = {
+  REPEAT: {
     label: 'Loops',
     icon: repeatOutline,
     position: 'top',
     color: '#3e3fd3',
-    actions: ['Repeat'],
+    textColor: '#ffffff',
   },
-  {
+  CONDITION: {
     label: 'Conditions',
     icon: gitBranchOutline,
     position: 'right',
     color: '#dcd7ff',
     textColor: '#4545d7',
-    actions: ['If Win', 'If Lose'],
   },
-  {
+  EVENT: {
     label: 'Events',
     icon: flashOutline,
     position: 'bottom',
     color: '#4a67a8',
-   //actions: ['Level Start', 'Level End'],
-    actions: ['Level End'],
+    textColor: '#ffffff',
   },
-  {
+  MOVEMENT: {
     label: 'Movement',
     icon: moveOutline,
     position: 'left',
     color: '#535e72',
-    actions: ['Move Up', 'Move Down', 'Move Left', 'Move Right'],
+    textColor: '#ffffff',
   },
-]
+}
 
+const items = computed(() => {
+const grouped = new Map<string, { id: string; label: string }[]>()
+//Map<string, string[]>()
+
+  for (const block of props.availableBlocks) {
+    const category = String(block.category)
+
+    if (!grouped.has(category)) {
+      grouped.set(category, [])
+    }
+
+    grouped.get(category)!.push({ id: block.id, label: block.label })
+  }
+
+  return Array.from(grouped.entries())
+    .map(([category, actions]) => {
+      const meta = categoryMeta[category as keyof typeof categoryMeta]
+
+      if (!meta) return null
+
+      return {
+        ...meta,
+        category,
+        actions
+      }
+    })
+    .filter(Boolean)
+})
 
 const onHover = (item: any) => {
   activeItem.value = item.label
@@ -111,10 +179,19 @@ const onClick = (item: any) => {
   activeItem.value = activeItem.value === item.label ? null : item.label
 }
 
-const onActionClick = (item: any, action: string) => {
+// const onActionClick = (item: any, action: string) => {
+//   emit('select', {
+//     category: item.label,
+//     action,
+//     color: item.color,
+//     textColor: item.textColor ?? '#ffffff',
+//   })
+// }
+const onActionClick = (item: any, action: any) => {
   emit('select', {
-    category: item.label,
-    action,
+    category: item.category,
+    actionId: action.id,
+    actionLabel: action.label,
     color: item.color,
     textColor: item.textColor ?? '#ffffff',
   })

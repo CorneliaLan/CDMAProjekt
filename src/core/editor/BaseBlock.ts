@@ -6,6 +6,7 @@ import { ExecutionContext } from '../engine/ExecutionContext';
  */
 export abstract class BaseBlock {
   abstract readonly id: string;
+  abstract readonly label: string;
   abstract readonly category: BlockCategory;
 
   // Child blocks are used by control-flow blocks like repeat/if blocks.

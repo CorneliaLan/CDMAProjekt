@@ -4,6 +4,7 @@ import { ExecutionContext } from '@/core/engine/ExecutionContext';
 
 export class RepeatBlock extends BaseBlock {
   readonly id = 'repeat-x';
+  readonly label = 'Repeat';
   readonly category = BlockCategory.REPEAT;
   public iterations: number = 3;
 
