@@ -4,6 +4,7 @@ import { ExecutionContext } from '@/core/engine/ExecutionContext';
 
 export class IfWallBlock extends BaseBlock {
   readonly id = 'if-wall';
+  readonly label = 'If';
   readonly category = BlockCategory.CONTROL;
 
   execute(context: ExecutionContext): void {

@@ -27,6 +27,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   const engine = shallowRef<GameEngine | null>(null);
   const gameState = ref<GameState | null>(null);
   const availableBlocks = ref<AvailableBlock[]>([]);
+  const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
   const programBlocks = ref<BaseBlock[]>([]);
 
   const level = computed(() => getLevelById(Number(unref(levelId))) ?? null);
@@ -42,7 +43,15 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
       return false;
     }
 
-    registerBlocksByIds(level.value.unlockedBlockIds);
+    //registerBlocksByIds(level.value.unlockedBlockIds);
+    const blockIds = [
+      ...new Set([
+        ...level.value.unlockedBlockIds,
+        ...ALWAYS_AVAILABLE_BLOCK_IDS
+      ])
+    ];
+
+    registerBlocksByIds(blockIds);
     availableBlocks.value = registry.getAllBlocks().map((block) => ({
       id: block.id,
       label: block.label,

@@ -79,38 +79,6 @@ const emit = defineEmits<{
   }]
 }>()
 
-// const items = [
-//   {
-//     label: 'Loops',
-//     icon: repeatOutline,
-//     position: 'top',
-//     color: '#3e3fd3',
-//     actions: ['Repeat'],
-//   },
-//   {
-//     label: 'Conditions',
-//     icon: gitBranchOutline,
-//     position: 'right',
-//     color: '#dcd7ff',
-//     textColor: '#4545d7',
-//     actions: ['If Win', 'If Lose'],
-//   },
-//   {
-//     label: 'Events',
-//     icon: flashOutline,
-//     position: 'bottom',
-//     color: '#4a67a8',
-//    //actions: ['Level Start', 'Level End'],
-//     actions: ['Level End'],
-//   },
-//   {
-//     label: 'Movement',
-//     icon: moveOutline,
-//     position: 'left',
-//     color: '#535e72',
-//     actions: ['Move Up', 'Move Down', 'Move Left', 'Move Right'],
-//   },
-// ]
 const categoryMeta = {
   REPEAT: {
     label: 'Loops',
@@ -119,7 +87,7 @@ const categoryMeta = {
     color: '#3e3fd3',
     textColor: '#ffffff',
   },
-  CONDITION: {
+  CONTROL: {
     label: 'Conditions',
     icon: gitBranchOutline,
     position: 'right',
@@ -133,7 +101,7 @@ const categoryMeta = {
     color: '#4a67a8',
     textColor: '#ffffff',
   },
-  MOVEMENT: {
+  ACTION: {
     label: 'Movement',
     icon: moveOutline,
     position: 'left',
@@ -179,14 +147,6 @@ const onClick = (item: any) => {
   activeItem.value = activeItem.value === item.label ? null : item.label
 }
 
-// const onActionClick = (item: any, action: string) => {
-//   emit('select', {
-//     category: item.label,
-//     action,
-//     color: item.color,
-//     textColor: item.textColor ?? '#ffffff',
-//   })
-// }
 const onActionClick = (item: any, action: any) => {
   emit('select', {
     category: item.category,
