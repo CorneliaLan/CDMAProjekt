@@ -20,5 +20,14 @@ export const colors = {
   repeat: '#5b5eeb',
   move: '#595971',
   events: '#4E4F9D',
-  condition: '#E1E0FF'
+  condition: '#E1E0FF',
+
+  gridBackground: '#f4f6fb',
+  cellEmpty: '#E7E7F5',
+  cellWall: '#CCCDF4',
+  cellChest: '#e8ded7',
+  cellChestBorder: '#d2b48c',
+
+  target: '#7678EE',
+  player: '#4F52E9'
 }

@@ -69,6 +69,8 @@ import {
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
+//import Preview from '@/components/LevelPreview.vue'
+
 import { useEditorFacade } from '@/composables/useEditorFacade'
 
 class FlowNode extends ClassicPreset.Node {
