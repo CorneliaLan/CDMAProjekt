@@ -1,5 +1,19 @@
 {
+  "name": "learn-qube",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc && vite build",
+    "preview": "vite preview",
+    "test:e2e": "cypress run",
+    "test:unit": "vitest",
+    "lint": "eslint ."
+  },
   "dependencies": {
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@ionic/vue": "^8.8.5",
     "@ionic/vue-router": "^8.8.5",
     "elkjs": "^0.8.2",
