@@ -36,7 +36,8 @@
         </section>
 
         <section class="pane right-pane">
-          Level {{ levelId }}
+          <Preview/>
+         <!--Level {{ levelId }}-->
         </section>
       </div>
     </ion-content>
@@ -64,6 +65,7 @@ import {
   Presets as ArrangePresets,
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
+import Preview from '@/components/PreviewPanel.vue'
 
 class FlowNode extends ClassicPreset.Node {
   width = 180
@@ -143,17 +145,17 @@ onMounted(async () => {
   const connection = new ConnectionPlugin<Schemes, AreaExtra>()
   const render = new VuePlugin<Schemes, AreaExtra>()
 
-  //render.addPreset(Presets.classic.setup())
-  render.addPreset(
-    Presets.classic.setup({
-      customize: {
-        node() {
-          return CustomNode
+  render.addPreset(Presets.classic.setup())
+  // render.addPreset(
+  //   Presets.classic.setup({
+  //     customize: {
+  //       node() {
+  //         return CustomNode
 
-        }
-      }
-    })
-  )
+  //       }
+  //     }
+  //   })
+  // )
   connection.addPreset(ConnectionPresets.classic.setup())
 
   editor.use(area)
