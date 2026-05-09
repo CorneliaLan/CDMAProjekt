@@ -8,11 +8,15 @@ export class IfWallBlock extends BaseBlock {
   readonly category = BlockCategory.CONTROL;
 
   execute(context: ExecutionContext): void {
-    if (!context.isWallAhead()) {
+    if (context.shouldStopExecution() || !context.isWallAhead()) {
       return;
     }
 
     for (const child of this.children) {
+      if (context.shouldStopExecution()) {
+        break;
+      }
+
       child.execute(context);
     }
   }

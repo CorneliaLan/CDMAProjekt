@@ -10,7 +10,15 @@ export class RepeatBlock extends BaseBlock {
 
   execute(context: ExecutionContext): void {
     for (let i = 0; i < this.iterations; i += 1) {
+      if (context.shouldStopExecution()) {
+        break;
+      }
+
       for (const child of this.children) {
+        if (context.shouldStopExecution()) {
+          break;
+        }
+
         child.execute(context);
       }
     }

@@ -16,14 +16,14 @@
 
         <!-- CHEST -->
         <ion-icon
-          v-else-if="cell === 2"
+          v-else-if="isChestCell(cell)"
           name="cube-outline"
           class="icon chest-icon"
         />
 
         <!-- TARGET -->
         <ion-icon
-          v-else-if="cell === 3"
+          v-else-if="cell === RenderCell.Target"
           name="radio-button-on-outline"
           class="icon target-icon"
         />
@@ -37,6 +37,7 @@ import { IonIcon } from '@ionic/vue'
 import { addIcons } from 'ionicons'
 import { cubeOutline, radioButtonOnOutline, person } from 'ionicons/icons'
 import { colors } from '@/theme/colors'
+import { RenderCell } from '@/core/engine/GameState'
 
 addIcons({
   cubeOutline,
@@ -52,12 +53,15 @@ defineProps<{
 
 const getCellClass = (cell: number) => {
   switch (cell) {
-    case 1: return 'wall'
-    case 2: return 'chest'
-    case 3: return 'target'
+    case RenderCell.Wall: return 'wall'
+    case RenderCell.Chest: return 'chest'
+    case RenderCell.Target: return 'target'
+    case RenderCell.ChestOnTarget: return 'chest-on-target'
     default: return 'empty'
   }
 }
+
+const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === RenderCell.ChestOnTarget
 </script>
 
 <style scoped>
@@ -101,6 +105,11 @@ const getCellClass = (cell: number) => {
 .chest {
   background: v-bind('colors.cellChest');
   border: 2px solid v-bind('colors.cellChestBorder');
+}
+
+.chest-on-target {
+  background: v-bind('colors.cellChest');
+  border: 2px solid v-bind('colors.target');
 }
 
 /* TARGET */

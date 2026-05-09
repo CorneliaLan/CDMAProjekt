@@ -2,6 +2,7 @@ import { computed, ref, shallowRef, unref, watch, type MaybeRef } from 'vue';
 import { GameEngine } from '@/core/engine/GameEngine';
 import { BlockRegistry } from '@/core/editor/BlockRegistry';
 import { GameState } from '@/core/engine/GameState';
+import type { ExecutionResult } from '@/core/engine/ExecutionResult';
 import type { BaseBlock } from '@/core/editor/BaseBlock';
 import { BlockCategory } from '@/core/editor/BlockCategories';
 import { getLevelById, type LevelDefinition } from '@/core/levels/levelCatalog';
@@ -26,6 +27,7 @@ function createEngine(level: LevelDefinition): GameEngine {
 export function useEditorFacade(levelId: MaybeRef<number>) {
   const engine = shallowRef<GameEngine | null>(null);
   const gameState = ref<GameState | null>(null);
+  const executionResult = ref<ExecutionResult | null>(null);
   const availableBlocks = ref<AvailableBlock[]>([]);
   const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
   const programBlocks = ref<BaseBlock[]>([]);
@@ -38,6 +40,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
       registry.clear();
       engine.value = null;
       gameState.value = null;
+      executionResult.value = null;
       availableBlocks.value = [];
       clearProgram();
       return false;
@@ -60,6 +63,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     const newEngine = createEngine(level.value);
     engine.value = newEngine;
     gameState.value = newEngine.getState().clone();
+    executionResult.value = null;
     clearProgram();
     return true;
   };
@@ -154,7 +158,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     const newEngine = createEngine(level.value);
     engine.value = newEngine;
     newEngine.setDebug(true);
-    newEngine.run(programBlocks.value);
+    executionResult.value = newEngine.run(programBlocks.value);
     gameState.value = newEngine.getState().clone();
     return true;
   };
@@ -162,6 +166,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   return {
     level,
     gameState,
+    executionResult,
     availableBlocks,
     program,
     addProgramBlock,

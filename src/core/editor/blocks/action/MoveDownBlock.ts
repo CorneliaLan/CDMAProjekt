@@ -8,8 +8,6 @@ export class MoveDownBlock extends BaseBlock {
   readonly category = BlockCategory.ACTION;
 
   execute(context: ExecutionContext): void {
-    if (!context.isWallAt(0, 1)) {
-      context.state.playerY += 1;
-    }
+    context.movePlayer(0, 1);
   }
 }
