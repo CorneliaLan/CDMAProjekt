@@ -2,7 +2,7 @@
   <div class="control-bar">
 
     <!-- PLAY BUTTON -->
-    <button class="play-btn">
+    <button class="play-btn" type="button" @click="emit('play')">
       <ion-icon name="play"></ion-icon>
     </button>
 
@@ -40,6 +40,10 @@ addIcons({
   squareOutline,
   refresh
 })
+
+const emit = defineEmits<{
+  play: []
+}>()
 </script>
 
 <style scoped>

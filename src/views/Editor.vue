@@ -39,7 +39,11 @@
         </section>
 
         <section class="pane right-pane">
-          <Preview/>
+          <Preview
+            :level="level"
+            :game-state="gameState"
+            @play="runVisibleProgram"
+          />
          <!--Level {{ levelId }}-->
         </section>
       </div>
@@ -77,6 +81,8 @@ class FlowNode extends ClassicPreset.Node {
   width = 180
   height = 120
 
+  blockId: string | null = null
+  nodeKind: 'start' | 'block' | 'end' = 'block'
   category = 'default'
   color = '#8799f6'
   textColor = '#ffffff'
@@ -104,9 +110,7 @@ const {
   level,
   gameState,
   availableBlocks,
-  program,
-  addProgramBlock,
-  deleteProgramBlock,
+  setProgramFromBlockIds,
   runProgram
 } = useEditorFacade(levelId)
 
@@ -138,6 +142,7 @@ const createLevelStartNode = async () => {
   node.color = '#4a67a8'
   node.textColor = '#ffffff'
   node.deletable = false
+  node.nodeKind = 'start'
 
   node.addOutput('out', new ClassicPreset.Output(socket))
 
@@ -288,6 +293,53 @@ const arrangeNodes = async () => {
   await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
+const deriveProgramBlockIds = (): string[] => {
+  if (!editor) return []
+
+  const nodes = editor.getNodes() as FlowNode[]
+  const connections = editor.getConnections()
+  const nodesById = new Map(nodes.map((node) => [node.id, node]))
+  const startNode = nodes.find((node) => node.nodeKind === 'start')
+
+  if (!startNode) return []
+
+  const blockIds: string[] = []
+  const visitedNodeIds = new Set<string>([startNode.id])
+  let currentNode = startNode
+
+  while (true) {
+    const nextConnection = connections.find((connection) => connection.source === currentNode.id)
+    if (!nextConnection) break
+
+    const nextNode = nodesById.get(nextConnection.target)
+    if (!nextNode || visitedNodeIds.has(nextNode.id)) break
+
+    visitedNodeIds.add(nextNode.id)
+
+    if (nextNode.nodeKind === 'end') {
+      break
+    }
+
+    if (nextNode.blockId) {
+      blockIds.push(nextNode.blockId)
+    }
+
+    currentNode = nextNode
+  }
+
+  return blockIds
+}
+
+const runVisibleProgram = () => {
+  const blockIds = deriveProgramBlockIds()
+
+  if (!setProgramFromBlockIds(blockIds)) {
+    return
+  }
+
+  runProgram()
+}
+
 onBeforeUnmount(() => {
   area?.destroy()
   editor = null
@@ -303,15 +355,12 @@ const addReteNode = async (payload: BlueprintPayload) => {
   node.category = payload.category
   node.color = payload.color
   node.textColor = payload.textColor
+  node.blockId = payload.actionId
 
-  const action = payload.actionLabel.toLowerCase()
+  const isLevelEnd = payload.actionId === 'level-end'
+  node.nodeKind = isLevelEnd ? 'end' : 'block'
 
-  const isLevelStart = action.includes('level start')
-  const isLevelEnd = action.includes('level end')
-
-  if (!isLevelStart) {
-    node.addInput('in', new ClassicPreset.Input(socket))
-  }
+  node.addInput('in', new ClassicPreset.Input(socket))
 
   if (!isLevelEnd) {
     node.addOutput('out', new ClassicPreset.Output(socket))
@@ -324,7 +373,7 @@ const addReteNode = async (payload: BlueprintPayload) => {
     y: 80
   })
 
-  if (lastNode && !isLevelStart) {
+  if (lastNode && lastNode.nodeKind !== 'end') {
 
     const connection = new FlowConnection(
       lastNode,

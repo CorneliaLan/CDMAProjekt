@@ -83,6 +83,22 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     return true;
   };
 
+  const setProgramFromBlockIds = (blockIds: string[]): boolean => {
+    const nextProgram: BaseBlock[] = [];
+
+    for (const blockId of blockIds) {
+      const block = registry.getBlock(blockId);
+      if (!block) {
+        return false;
+      }
+
+      nextProgram.push(block);
+    }
+
+    programBlocks.value = nextProgram;
+    return true;
+  };
+
   const replaceProgramBlock = (index: number, blockId: string): boolean => {
     if (index < 0 || index >= programBlocks.value.length) {
       return false;
@@ -149,6 +165,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     availableBlocks,
     program,
     addProgramBlock,
+    setProgramFromBlockIds,
     replaceProgramBlock,
     setRepeatIterations,
     deleteProgramBlock,

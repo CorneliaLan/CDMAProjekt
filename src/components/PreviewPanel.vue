@@ -2,33 +2,38 @@
   <div class="preview-panel">
     <div class="preview-container">
       <LevelPreview
-        :grid="level"
-        :playerX="playerX"
-        :playerY="playerY"
+        v-if="previewGrid.length"
+        :grid="previewGrid"
+        :player-x="playerX"
+        :player-y="playerY"
       />
     </div>
 
     <div class="control-wrapper">
-      <ControlBar />
+      <ControlBar @play="emit('play')" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import LevelPreview from '@/components/LevelPreview.vue'
 import ControlBar from '@/components/ControlBar.vue'
+import type { GameState } from '@/core/engine/GameState'
+import type { LevelDefinition } from '@/core/levels/levelCatalog'
 
-const level = [
-  [0,1,1,1,1,0,0,0],
-  [0,1,3,0,1,1,0,0],
-  [1,1,0,2,0,1,1,1],
-  [1,0,0,0,2,0,0,1],
-  [1,0,0,0,0,0,0,1],
-  [1,1,3,1,1,1,1,1]
-]
+const props = defineProps<{
+  level: LevelDefinition | null
+  gameState: GameState | null
+}>()
 
-const playerX = 2
-const playerY = 3
+const emit = defineEmits<{
+  play: []
+}>()
+
+const previewGrid = computed(() => props.gameState?.grid ?? props.level?.grid ?? [])
+const playerX = computed(() => props.gameState?.playerX ?? props.level?.startX)
+const playerY = computed(() => props.gameState?.playerY ?? props.level?.startY)
 </script>
 
 <style scoped>
