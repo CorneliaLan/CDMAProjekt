@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "@ionic/vue": "^8.8.5",
+    "@ionic/vue-router": "^8.8.5",
+    "elkjs": "^0.8.2",
+    "ionicons": "^8.0.13",
+    "rete": "^2.0.6",
+    "rete-area-plugin": "^2.1.5",
+    "rete-auto-arrange-plugin": "^2.0.2",
+    "rete-connection-plugin": "^2.0.5",
+    "rete-vue-plugin": "^2.1.2",
+    "vue": "^3.5.33",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-legacy": "^8.0.1",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "8.0.10"
+  }
+}
