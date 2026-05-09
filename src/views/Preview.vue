@@ -9,6 +9,8 @@
       <PreviewPanel
         :level="level"
         :game-state="gameState"
+        :execution-result="executionResult"
+        @play="runProgram"
       />
     </ion-content>
   </ion-page>
@@ -23,5 +25,5 @@ import { colors } from '@/theme/colors'
 import { useEditorFacade } from '@/composables/useEditorFacade'
 
 const defaultLevelId = ref(1)
-const { level, gameState } = useEditorFacade(defaultLevelId)
+const { level, gameState, executionResult, runProgram } = useEditorFacade(defaultLevelId)
 </script>

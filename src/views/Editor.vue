@@ -42,6 +42,7 @@
           <Preview
             :level="level"
             :game-state="gameState"
+            :execution-result="executionResult"
             @play="runVisibleProgram"
           />
          <!--Level {{ levelId }}-->
@@ -109,6 +110,7 @@ const levelId = computed(() => Number(route.params.id))
 const {
   level,
   gameState,
+  executionResult,
   availableBlocks,
   setProgramFromBlockIds,
   runProgram
