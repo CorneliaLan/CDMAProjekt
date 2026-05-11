@@ -63,14 +63,14 @@
             [ ]
           </button>
         </section>
-
-        <button
+        <div
           v-if="isRightCollapsed"
-          class="restore-preview-button"
-          @click="restoreRightPane"
+          class="pane-resizer collapsed-resizer"
         >
-          Preview
-        </button>
+          <button class="collapse-button" @click.stop="restoreRightPane">
+            ‹
+          </button>
+        </div>
 
         <div
           v-if="isPreviewExpanded"
@@ -658,6 +658,13 @@ const closePreview = () => {
   cursor: pointer;
   font-size: 22px;
   z-index: 60;
+}
+
+.collapsed-resizer {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  bottom: 0;
 }
 
 .restore-preview-button {
