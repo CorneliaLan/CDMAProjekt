@@ -9,7 +9,10 @@
       <div class="split-layout">
         <section
           class="pane left-pane"
-        >
+        > 
+          <button class="back-button" @click="goToMap">
+            ← Back
+          </button>
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
@@ -39,9 +42,23 @@
         </section>
 
         <section class="pane right-pane">
-          <Preview/>
-         <!--Level {{ levelId }}-->
+          <Preview />
+
+          <button class="expand-preview-button" @click="expandPreview">
+            [ ]
+          </button>
         </section>
+
+        <div
+          v-if="isPreviewExpanded"
+          class="preview-fullscreen"
+        >
+          <button class="close-preview-button" @click="closePreview">
+            ✕
+          </button>
+
+          <Preview />
+        </div>
       </div>
     </ion-content>
   </ion-page>
@@ -49,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 
@@ -69,7 +86,6 @@ import {
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
-//import Preview from '@/components/LevelPreview.vue'
 
 import { useEditorFacade } from '@/composables/useEditorFacade'
 
@@ -98,6 +114,12 @@ type BlueprintPayload = {
 }
 
 const route = useRoute()
+const router = useRouter()
+
+const goToMap = () => {
+  router.push('/map')
+}
+
 const levelId = computed(() => Number(route.params.id))
 
 const {
@@ -343,6 +365,18 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   closeRadialMenu()
 }
+
+const isPreviewExpanded = ref(false)
+
+const expandPreview = () => {
+  isPreviewExpanded.value = true
+}
+
+const closePreview = () => {
+  isPreviewExpanded.value = false
+}
+
+
 </script>
 
 <style scoped>
@@ -366,28 +400,11 @@ const addReteNode = async (payload: BlueprintPayload) => {
   user-select: none;
 }
 
-.right-pane {
-  flex: 0 0 30%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .rete-editor {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-@media (min-width: 1024px) {
-  .left-pane {
-    flex-basis: 60%;
-  }
-
-  .right-pane {
-    flex-basis: 40%;
-  }
 }
 
 .floating-plus {
@@ -456,5 +473,110 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
 :deep(.node .title) {
   font-weight: 700 !important;
+}
+
+.right-pane {
+  position: relative;
+  flex: 0 0 30%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-preview-button {
+  position: absolute;
+  top: 28px;
+  right: 24px;
+  z-index: 10;
+
+  border: none;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+
+  background: v-bind('colors.primary');
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.preview-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  background: v-bind('colors.background');
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.close-preview-button {
+  position: absolute;
+  top: 84px;
+  right: 24px;
+  z-index: 10001;
+
+  width: 44px;
+  height: 44px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: v-bind('colors.primary');
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 30;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 10px 16px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: 0.2s;
+}
+
+.back-button:hover {
+  transform: translateY(-1px);
+}
+
+.left-pane {
+  position: relative;
+}
+
+@media (min-width: 1024px) {
+  .left-pane {
+    flex-basis: 60%;
+  }
+
+  .right-pane {
+    flex-basis: 40%;
+  }
+}
+
+@media (max-width: 768px) {
+  .left-pane {
+    flex-basis: 100%;
+  }
 }
 </style>

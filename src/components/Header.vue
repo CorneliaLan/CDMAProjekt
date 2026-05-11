@@ -6,7 +6,7 @@
         <div class="logo">LearnQube</div>
 
         <!-- TABS -->
-        <div class="tabs">
+      <!--  <div class="tabs">
           <span
             v-for="tab in tabs"
             :key="tab.path"
@@ -15,13 +15,14 @@
           >
             {{ tab.name }}
           </span>
-        </div>
+        </div>-->
 
-        <div class="icons">
+        <!-- ICONS -->
+      <!--  <div class="icons">
           <ion-icon name="settings-outline"></ion-icon>
           <ion-icon name="notifications-outline"></ion-icon>
           <ion-icon name="person-circle-outline"></ion-icon>
-        </div>
+        </div>-->
 
       </div>
     </ion-toolbar>
@@ -46,11 +47,11 @@ addIcons({
 const route = useRoute()
 const router = useRouter()
 
-const tabs = [
-  { name: 'Map', path: '/map' },
-  { name: 'Editor', path: '/editor/1' },
-  { name: 'Preview', path: '/preview' }
-]
+// const tabs = [
+//   { name: 'Map', path: '/map' },
+//   { name: 'Editor', path: '/editor/1' },
+//   { name: 'Preview', path: '/preview' }
+// ]
 
 const goTo = (path: string) => {
   if (route.path !== path) {
@@ -74,9 +75,9 @@ const isActiveTab = (path: string) => {
 }
 
 .header-content {
-  display: flex;
+  /*display: flex;*/
   align-items: center;
-  justify-content: space-between;
+ /* justify-content: space-between;*/
   padding: 12px;
 }
 
@@ -86,7 +87,7 @@ const isActiveTab = (path: string) => {
   font-size: 18px;
 }
 
-/* TABS */
+/* TABS
 .tabs {
   display: flex;
   gap: 20px;
@@ -96,21 +97,22 @@ const isActiveTab = (path: string) => {
   opacity: 0.6;
   cursor: pointer;
   transition: 0.2s;
-}
+}*/
 
 /* ACTIVE TAB */
+/*
 .tabs .active {
   opacity: 1;
   border-bottom: 2px solid white;
-}
+}*/
 
 /* HOVER */
-.tabs span:hover {
+/* .tabs span:hover {
   opacity: 1;
-}
+} */
 
 /* ICONS */
-.icons {
+/* .icons {
   display: flex;
   gap: 10px;
   font-size: 18px;
@@ -132,6 +134,6 @@ const isActiveTab = (path: string) => {
 .icons ion-icon:hover {
   opacity: 1;
   transform: scale(1.1);
-}
+} */ 
 
 </style>
