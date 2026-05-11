@@ -174,6 +174,7 @@ const {
   close: closeRadialMenu,
 } = useRadialMenu()
 
+// Resize and collapse functionality
 const leftWidth = ref(60)
 const isResizing = ref(false)
 const isRightCollapsed = ref(false)
@@ -215,7 +216,7 @@ const restoreRightPane = () => {
   leftWidth.value = 60
   window.dispatchEvent(new Event('resize'))
 }
-
+// Rete editor logic
 const createLevelStartNode = async () => {
   if (!editor || !area) return
 
@@ -308,6 +309,24 @@ onMounted(async () => {
   await createLevelStartNode()
 })
 
+const hasOutput = (node: FlowNode) => {
+  return Boolean(node.outputs.out)
+}
+
+const addOutputIfMissing = (node: FlowNode) => {
+  if (hasOutput(node)) return
+
+  const socket = new ClassicPreset.Socket(node.category || 'flow')
+  node.addOutput('out', new ClassicPreset.Output(socket))
+}
+
+const removeOutputIfExists = (node: FlowNode) => {
+  if (!hasOutput(node)) return
+
+  node.removeOutput('out')
+}
+
+// Update delete button position when a node is moved
 const updateDeleteButtonPosition = (node: FlowNode) => {
   if (!area || !reteContainer.value) return
 
@@ -395,14 +414,9 @@ const addReteNode = async (payload: BlueprintPayload) => {
   const action = payload.actionLabel.toLowerCase()
 
   const isLevelStart = action.includes('level start')
-  const isLevelEnd = action.includes('level end')
 
   if (!isLevelStart) {
     node.addInput('in', new ClassicPreset.Input(socket))
-  }
-
-  if (!isLevelEnd) {
-    node.addOutput('out', new ClassicPreset.Output(socket))
   }
 
   await editor.addNode(node)
@@ -413,6 +427,11 @@ const addReteNode = async (payload: BlueprintPayload) => {
   })
 
   if (lastNode && !isLevelStart) {
+    if (!lastNode.outputs.out) {
+      const lastSocket = new ClassicPreset.Socket(lastNode.category)
+      lastNode.addOutput('out', new ClassicPreset.Output(lastSocket))
+      await area.update('node', lastNode.id)
+    }
 
     const connection = new FlowConnection(
       lastNode,
@@ -431,6 +450,8 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   closeRadialMenu()
 }
+
+// Preview expansion logic
 
 const isPreviewExpanded = ref(false)
 

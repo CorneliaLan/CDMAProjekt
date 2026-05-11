@@ -11,7 +11,6 @@ export type LevelDefinition = {
 const MOVEMENT_BLOCK_IDS = ['move-up', 'move-right', 'move-down', 'move-left'];
 const LEVEL_2_BLOCK_IDS = [...MOVEMENT_BLOCK_IDS, 'repeat-x'];
 const LEVEL_3_TO_5_BLOCK_IDS = [...LEVEL_2_BLOCK_IDS, 'if-wall'];
-//const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
 /**
  * Central source of truth for level setup and block unlocks.
  */
