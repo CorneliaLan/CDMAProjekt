@@ -9,7 +9,8 @@
       <div class="split-layout">
         <section
           class="pane left-pane"
-        > 
+          :style="{ flexBasis: isRightCollapsed ? '100%' : `${leftWidth}%` }"
+        >
           <button class="back-button" @click="goToMap">
             ← Back
           </button>
@@ -41,13 +42,35 @@
             </button>
         </section>
 
-        <section class="pane right-pane">
+     <div
+          v-if="!isRightCollapsed"
+          class="pane-resizer"
+          @mousedown="startResize"
+        >
+          <button class="collapse-button" @click.stop="collapseRightPane">
+            ›
+          </button>
+        </div>
+
+        <section
+          v-if="!isRightCollapsed"
+          class="pane right-pane"
+          :style="{ flexBasis: `${100 - leftWidth}%` }"
+        >
           <Preview />
 
           <button class="expand-preview-button" @click="expandPreview">
             [ ]
           </button>
         </section>
+
+        <button
+          v-if="isRightCollapsed"
+          class="restore-preview-button"
+          @click="restoreRightPane"
+        >
+          Preview
+        </button>
 
         <div
           v-if="isPreviewExpanded"
@@ -63,6 +86,7 @@
     </ion-content>
   </ion-page>
 </template>
+
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -149,6 +173,48 @@ const {
   open: openRadialMenu,
   close: closeRadialMenu,
 } = useRadialMenu()
+
+const leftWidth = ref(60)
+const isResizing = ref(false)
+const isRightCollapsed = ref(false)
+
+const startResize = () => {
+  isResizing.value = true
+
+  window.addEventListener('mousemove', resizePanes)
+  window.addEventListener('mouseup', stopResize)
+}
+
+const resizePanes = (event: MouseEvent) => {
+  if (!isResizing.value) return
+
+  const minLeft = 30
+  const maxLeft = 85
+
+  const newLeftWidth = (event.clientX / window.innerWidth) * 100
+
+  leftWidth.value = Math.min(maxLeft, Math.max(minLeft, newLeftWidth))
+}
+
+const stopResize = () => {
+  isResizing.value = false
+
+  window.removeEventListener('mousemove', resizePanes)
+  window.removeEventListener('mouseup', stopResize)
+
+  window.dispatchEvent(new Event('resize'))
+}
+
+const collapseRightPane = () => {
+  isRightCollapsed.value = true
+  window.dispatchEvent(new Event('resize'))
+}
+
+const restoreRightPane = () => {
+  isRightCollapsed.value = false
+  leftWidth.value = 60
+  window.dispatchEvent(new Event('resize'))
+}
 
 const createLevelStartNode = async () => {
   if (!editor || !area) return
@@ -394,10 +460,15 @@ const closePreview = () => {
 
 .left-pane {
   position: relative;
-  flex: 0 0 70%;
-  border-right: 1px solid #dcdcdc;
   overflow: hidden;
   user-select: none;
+}
+
+.right-pane {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .rete-editor {
@@ -473,14 +544,6 @@ const closePreview = () => {
 
 :deep(.node .title) {
   font-weight: 700 !important;
-}
-
-.right-pane {
-  position: relative;
-  flex: 0 0 30%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .expand-preview-button {
@@ -564,6 +627,57 @@ const closePreview = () => {
   position: relative;
 }
 
+.pane-resizer {
+  position: relative;
+  flex: 0 0 8px;
+  cursor: col-resize;
+  background: #dcdcdc;
+  z-index: 50;
+}
+
+.pane-resizer:hover {
+  background: v-bind('colors.primary');
+}
+
+.collapse-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 28px;
+  height: 48px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  cursor: pointer;
+  font-size: 22px;
+  z-index: 60;
+}
+
+.restore-preview-button {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  z-index: 100;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 10px 16px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
 @media (min-width: 1024px) {
   .left-pane {
     flex-basis: 60%;
@@ -573,10 +687,14 @@ const closePreview = () => {
     flex-basis: 40%;
   }
 }
-
 @media (max-width: 768px) {
+  .pane-resizer,
+  .right-pane {
+    display: none;
+  }
+
   .left-pane {
-    flex-basis: 100%;
+    flex-basis: 100% !important;
   }
 }
 </style>
