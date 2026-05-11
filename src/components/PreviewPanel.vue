@@ -1,11 +1,13 @@
 <template>
   <div class="preview-panel">
     <div class="preview-container">
-      <LevelPreview
-        :grid="level"
-        :playerX="playerX"
-        :playerY="playerY"
-      />
+      <div class="preview-scale">
+        <LevelPreview
+          :grid="level"
+          :playerX="playerX"
+          :playerY="playerY"
+        />
+      </div>
     </div>
 
     <div class="control-wrapper">
@@ -35,20 +37,56 @@ const playerY = 3
 .preview-panel {
   width: 100%;
   height: 100%;
+
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
 }
 
 .preview-container {
   flex: 1;
+
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  min-height: 0;
+  min-width: 0;
+
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.preview-scale {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-scale :deep(canvas),
+.preview-scale :deep(svg),
+.preview-scale :deep(.level-preview) {
+  max-width: 100%;
+  max-height: 100%;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain;
 }
 
 .control-wrapper {
+  flex-shrink: 0;
+
   display: flex;
   justify-content: center;
+
   padding: 16px;
 }
 </style>
