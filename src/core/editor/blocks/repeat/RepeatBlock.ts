@@ -8,6 +8,11 @@ export class RepeatBlock extends BaseBlock {
   readonly category = BlockCategory.REPEAT;
   public iterations: number = 3;
 
+  constructor(iterations = 3) {
+    super();
+    this.iterations = Number.isInteger(iterations) && iterations > 0 ? iterations : 3;
+  }
+
   execute(context: ExecutionContext): void {
     for (let i = 0; i < this.iterations; i += 1) {
       for (const child of this.children) {
