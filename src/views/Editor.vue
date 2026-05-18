@@ -9,7 +9,11 @@
       <div class="split-layout">
         <section
           class="pane left-pane"
+          :style="{ flexBasis: isRightCollapsed ? '100%' : `${leftWidth}%` }"
         >
+          <button class="back-button" @click="goToMap">
+            ← Back
+          </button>
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
@@ -38,23 +42,60 @@
             </button>
         </section>
 
-        <section class="pane right-pane">
+     <div
+          v-if="!isRightCollapsed"
+          class="pane-resizer"
+          @mousedown="startResize"
+        >
+          <button class="collapse-button" @click.stop="collapseRightPane">
+            ›
+          </button>
+        </div>
+
+        <section
+          v-if="!isRightCollapsed"
+          class="pane right-pane"
+          :style="{ flexBasis: `${100 - leftWidth}%` }"
+        >
           <Preview
-            :level="level"
-            :game-state="gameState"
-            :execution-result="executionResult"
-            @play="runVisibleProgram"
+              :level="level"
+              :game-state="gameState"
+              :execution-result="executionResult"
+              @play="runVisibleProgram"
           />
-         <!--Level {{ levelId }}-->
+
+          <button class="expand-preview-button" @click="expandPreview">
+            [ ]
+          </button>
         </section>
+        <div
+          v-if="isRightCollapsed"
+          class="pane-resizer collapsed-resizer"
+        >
+          <button class="collapse-button" @click.stop="restoreRightPane">
+            ‹
+          </button>
+        </div>
+
+        <div
+          v-if="isPreviewExpanded"
+          class="preview-fullscreen"
+        >
+          <button class="close-preview-button" @click="closePreview">
+            ✕
+          </button>
+
+          <Preview />
+        </div>
       </div>
     </ion-content>
   </ion-page>
 </template>
 
+
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline } from 'ionicons/icons'
 
@@ -74,7 +115,6 @@ import {
   ArrangeAppliers
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
-//import Preview from '@/components/LevelPreview.vue'
 
 import { useEditorFacade } from '@/composables/useEditorFacade'
 
@@ -105,6 +145,12 @@ type BlueprintPayload = {
 }
 
 const route = useRoute()
+const router = useRouter()
+
+const goToMap = () => {
+  router.push('/map')
+}
+
 const levelId = computed(() => Number(route.params.id))
 
 const {
@@ -134,6 +180,49 @@ const {
   close: closeRadialMenu,
 } = useRadialMenu()
 
+// Resize and collapse functionality
+const leftWidth = ref(60)
+const isResizing = ref(false)
+const isRightCollapsed = ref(false)
+
+const startResize = () => {
+  isResizing.value = true
+
+  window.addEventListener('mousemove', resizePanes)
+  window.addEventListener('mouseup', stopResize)
+}
+
+const resizePanes = (event: MouseEvent) => {
+  if (!isResizing.value) return
+
+  const minLeft = 30
+  const maxLeft = 85
+
+  const newLeftWidth = (event.clientX / window.innerWidth) * 100
+
+  leftWidth.value = Math.min(maxLeft, Math.max(minLeft, newLeftWidth))
+}
+
+const stopResize = () => {
+  isResizing.value = false
+
+  window.removeEventListener('mousemove', resizePanes)
+  window.removeEventListener('mouseup', stopResize)
+
+  window.dispatchEvent(new Event('resize'))
+}
+
+const collapseRightPane = () => {
+  isRightCollapsed.value = true
+  window.dispatchEvent(new Event('resize'))
+}
+
+const restoreRightPane = () => {
+  isRightCollapsed.value = false
+  leftWidth.value = 60
+  window.dispatchEvent(new Event('resize'))
+}
+// Rete editor logic
 const createLevelStartNode = async () => {
   if (!editor || !area) return
 
@@ -227,6 +316,24 @@ onMounted(async () => {
   await createLevelStartNode()
 })
 
+const hasOutput = (node: FlowNode) => {
+  return Boolean(node.outputs.out)
+}
+
+const addOutputIfMissing = (node: FlowNode) => {
+  if (hasOutput(node)) return
+
+  const socket = new ClassicPreset.Socket(node.category || 'flow')
+  node.addOutput('out', new ClassicPreset.Output(socket))
+}
+
+const removeOutputIfExists = (node: FlowNode) => {
+  if (!hasOutput(node)) return
+
+  node.removeOutput('out')
+}
+
+// Update delete button position when a node is moved
 const updateDeleteButtonPosition = (node: FlowNode) => {
   if (!area || !reteContainer.value) return
 
@@ -376,6 +483,11 @@ const addReteNode = async (payload: BlueprintPayload) => {
   })
 
   if (lastNode && lastNode.nodeKind !== 'end') {
+    if (!lastNode.outputs.out) {
+      const lastSocket = new ClassicPreset.Socket(lastNode.category)
+      lastNode.addOutput('out', new ClassicPreset.Output(lastSocket))
+      await area.update('node', lastNode.id)
+    }
 
     const connection = new FlowConnection(
       lastNode,
@@ -394,6 +506,20 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   closeRadialMenu()
 }
+
+// Preview expansion logic
+
+const isPreviewExpanded = ref(false)
+
+const expandPreview = () => {
+  isPreviewExpanded.value = true
+}
+
+const closePreview = () => {
+  isPreviewExpanded.value = false
+}
+
+
 </script>
 
 <style scoped>
@@ -411,14 +537,12 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
 .left-pane {
   position: relative;
-  flex: 0 0 70%;
-  border-right: 1px solid #dcdcdc;
   overflow: hidden;
   user-select: none;
 }
 
 .right-pane {
-  flex: 0 0 30%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -429,16 +553,6 @@ const addReteNode = async (payload: BlueprintPayload) => {
   inset: 0;
   width: 100%;
   height: 100%;
-}
-
-@media (min-width: 1024px) {
-  .left-pane {
-    flex-basis: 60%;
-  }
-
-  .right-pane {
-    flex-basis: 40%;
-  }
 }
 
 .floating-plus {
@@ -507,5 +621,164 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
 :deep(.node .title) {
   font-weight: 700 !important;
+}
+
+.expand-preview-button {
+  position: absolute;
+  top: 28px;
+  right: 24px;
+  z-index: 10;
+
+  border: none;
+  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+
+  background: v-bind('colors.primary');
+  color: white;
+  cursor: pointer;
+  font-size: 20px;
+}
+
+.preview-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  background: v-bind('colors.background');
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.close-preview-button {
+  position: absolute;
+  top: 84px;
+  right: 24px;
+  z-index: 10001;
+
+  width: 44px;
+  height: 44px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: v-bind('colors.primary');
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 30;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 10px 16px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  transition: 0.2s;
+}
+
+.back-button:hover {
+  transform: translateY(-1px);
+}
+
+.left-pane {
+  position: relative;
+}
+
+.pane-resizer {
+  position: relative;
+  flex: 0 0 8px;
+  cursor: col-resize;
+  background: #dcdcdc;
+  z-index: 50;
+}
+
+.pane-resizer:hover {
+  background: v-bind('colors.primary');
+}
+
+.collapse-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  transform: translate(-50%, -50%);
+
+  width: 28px;
+  height: 48px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  cursor: pointer;
+  font-size: 22px;
+  z-index: 60;
+}
+
+.collapsed-resizer {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  bottom: 0;
+}
+
+.restore-preview-button {
+  position: absolute;
+  top: 92px;
+  right: 24px;
+  z-index: 100;
+
+  border: none;
+  border-radius: 12px;
+
+  padding: 10px 16px;
+
+  background: v-bind('colors.primary');
+  color: white;
+
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (min-width: 1024px) {
+  .left-pane {
+    flex-basis: 60%;
+  }
+
+  .right-pane {
+    flex-basis: 40%;
+  }
+}
+@media (max-width: 768px) {
+  .pane-resizer,
+  .right-pane {
+    display: none;
+  }
+
+  .left-pane {
+    flex-basis: 100% !important;
+  }
 }
 </style>

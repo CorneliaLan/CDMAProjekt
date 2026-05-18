@@ -6,12 +6,14 @@
       :fullscreen="true"
       :style="{ '--background': colors.background }"
     >
-      <PreviewPanel
+      <div class="preview-page">
+        <PreviewPanel
         :level="level"
         :game-state="gameState"
         :execution-result="executionResult"
         @play="runProgram"
       />
+      </div>
     </ion-content>
   </ion-page>
 </template>
@@ -27,3 +29,25 @@ import { useEditorFacade } from '@/composables/useEditorFacade'
 const defaultLevelId = ref(1)
 const { level, gameState, executionResult, runProgram } = useEditorFacade(defaultLevelId)
 </script>
+
+<style scoped>
+.preview-page {
+  width: 100%;
+  height: 100%;
+}
+
+ion-content::part(scroll) {
+  height: 100%;
+}
+
+.right-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.right-pane > * {
+  width: 100%;
+  height: 100%;
+}
+</style>

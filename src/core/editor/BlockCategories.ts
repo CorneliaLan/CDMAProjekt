@@ -1,6 +1,6 @@
 export enum BlockCategory {
   ACTION = 'ACTION',
   CONTROL = 'CONTROL',
-  REPEAT = 'REPEAT',
-  EVENT = 'EVENT'
+  REPEAT = 'REPEAT'
+ // EVENT = 'EVENT'
 }

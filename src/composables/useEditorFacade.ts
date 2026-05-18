@@ -29,7 +29,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   const gameState = ref<GameState | null>(null);
   const executionResult = ref<ExecutionResult | null>(null);
   const availableBlocks = ref<AvailableBlock[]>([]);
-  const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
+  //const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
   const programBlocks = ref<BaseBlock[]>([]);
 
   const level = computed(() => getLevelById(Number(unref(levelId))) ?? null);
@@ -50,7 +50,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     const blockIds = [
       ...new Set([
         ...level.value.unlockedBlockIds,
-        ...ALWAYS_AVAILABLE_BLOCK_IDS
+        // ...ALWAYS_AVAILABLE_BLOCK_IDS
       ])
     ];
 

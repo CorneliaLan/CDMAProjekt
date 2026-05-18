@@ -1,62 +1,64 @@
 <template>
   <div class="preview-panel">
     <div class="preview-container">
-      <div
-        v-if="levelCompleted"
-        class="execution-banner success-banner"
-      >
-        <ion-icon
-          name="checkmark-circle"
-          class="status-icon"
-        />
-        <div>
-          <strong>Level completed</strong>
-          <span>{{ completedSummary }}</span>
+      <div class="preview-scale">
+        <div
+            v-if="levelCompleted"
+            class="execution-banner success-banner"
+        >
+          <ion-icon
+              name="checkmark-circle"
+              class="status-icon"
+          />
+          <div>
+            <strong>Level completed</strong>
+            <span>{{ completedSummary }}</span>
+          </div>
         </div>
-      </div>
 
-      <div
-        v-else-if="runtimeError"
-        class="execution-banner error-banner"
-      >
-        <ion-icon
-          name="alert-circle"
-          class="status-icon"
-        />
-        <div>
-          <strong>Runtime error</strong>
-          <span>{{ runtimeError.message }}</span>
-          <dl class="error-details">
-            <div>
-              <dt>Code</dt>
-              <dd>{{ runtimeError.code }}</dd>
-            </div>
-            <div>
-              <dt>Steps</dt>
-              <dd>{{ executionResult?.stepsExecuted ?? 0 }}</dd>
-            </div>
-            <div>
-              <dt>Player</dt>
-              <dd>{{ formatPosition(runtimeError.playerPosition) }}</dd>
-            </div>
-            <div>
-              <dt>Move</dt>
-              <dd>{{ formatMove(runtimeError.attemptedMove) }}</dd>
-            </div>
-            <div>
-              <dt>Blocked</dt>
-              <dd>{{ formatPosition(runtimeError.blockedPosition) }}</dd>
-            </div>
-          </dl>
+        <div
+            v-else-if="runtimeError"
+            class="execution-banner error-banner"
+        >
+          <ion-icon
+              name="alert-circle"
+              class="status-icon"
+          />
+          <div>
+            <strong>Runtime error</strong>
+            <span>{{ runtimeError.message }}</span>
+            <dl class="error-details">
+              <div>
+                <dt>Code</dt>
+                <dd>{{ runtimeError.code }}</dd>
+              </div>
+              <div>
+                <dt>Steps</dt>
+                <dd>{{ executionResult?.stepsExecuted ?? 0 }}</dd>
+              </div>
+              <div>
+                <dt>Player</dt>
+                <dd>{{ formatPosition(runtimeError.playerPosition) }}</dd>
+              </div>
+              <div>
+                <dt>Move</dt>
+                <dd>{{ formatMove(runtimeError.attemptedMove) }}</dd>
+              </div>
+              <div>
+                <dt>Blocked</dt>
+                <dd>{{ formatPosition(runtimeError.blockedPosition) }}</dd>
+              </div>
+            </dl>
+          </div>
         </div>
-      </div>
 
-      <LevelPreview
-        v-if="previewGrid.length"
-        :grid="previewGrid"
-        :player-x="playerX"
-        :player-y="playerY"
-      />
+        <LevelPreview
+            v-if="previewGrid.length"
+            :grid="previewGrid"
+            :player-x="playerX"
+            :player-y="playerY"
+        />
+      </div>
     </div>
 
     <div class="control-wrapper">
@@ -110,23 +112,58 @@ const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${mo
 .preview-panel {
   width: 100%;
   height: 100%;
+
   display: flex;
   flex-direction: column;
+
+  overflow: hidden;
 }
 
 .preview-container {
   flex: 1;
+
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  min-height: 0;
+  min-width: 0;
+
   gap: 18px;
   padding: 18px;
+  box-sizing: border-box;
+}
+
+.preview-scale {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-scale :deep(canvas),
+.preview-scale :deep(svg),
+.preview-scale :deep(.level-preview) {
+  max-width: 100%;
+  max-height: 100%;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain;
 }
 
 .control-wrapper {
+  flex-shrink: 0;
+
   display: flex;
   justify-content: center;
+
   padding: 16px;
 }
 

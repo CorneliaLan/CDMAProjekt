@@ -94,13 +94,13 @@ const categoryMeta = {
     color: '#dcd7ff',
     textColor: '#4545d7',
   },
-  EVENT: {
-    label: 'Events',
-    icon: flashOutline,
-    position: 'bottom',
-    color: '#4a67a8',
-    textColor: '#ffffff',
-  },
+  // EVENT: {
+  //   label: 'Events',
+  //   icon: flashOutline,
+  //   position: 'bottom',
+  //   color: '#4a67a8',
+  //   textColor: '#ffffff',
+  // },
   ACTION: {
     label: 'Movement',
     icon: moveOutline,
