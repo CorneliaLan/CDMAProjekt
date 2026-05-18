@@ -142,6 +142,7 @@ const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${mo
   height: 100%;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }

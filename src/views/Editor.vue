@@ -85,7 +85,12 @@
             ✕
           </button>
 
-          <Preview />
+          <Preview
+              :level="level"
+              :game-state="gameState"
+              :execution-result="executionResult"
+              @play="runVisibleProgram"
+          />
         </div>
       </div>
     </ion-content>
