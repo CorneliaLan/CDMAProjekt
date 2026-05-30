@@ -173,6 +173,17 @@ let nodeIndex = 0
 let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 let scopes: ScopesPlugin<Schemes, AreaExtra> | null = null
+const scopeSizeCache = new Map<string, { width: number; height: number }>()
+
+type ScopeBlockKind = 'ifwall' | 'repeat' | 'branch'
+type NodeSize = { width: number; height: number }
+type ScopePadding = { top: number; left: number; right: number; bottom: number }
+
+const scopeMinSizes: Record<ScopeBlockKind, NodeSize> = {
+  ifwall: { width: 540, height: 360 },
+  repeat: { width: 260, height: 190 },
+  branch: { width: 240, height: 150 }
+}
 
 /// Delete functionality
 let selectedNode: FlowNode | null = null
@@ -226,6 +237,284 @@ const restoreRightPane = () => {
   leftWidth.value = 60
   window.dispatchEvent(new Event('resize'))
 }
+
+const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { blockKind: ScopeBlockKind } => {
+  return node?.blockKind === 'ifwall' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
+}
+
+const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
+  if (node?.blockKind === 'ifwall') {
+    return { top: 92, left: 24, right: 24, bottom: 24 }
+  }
+
+  if (node?.blockKind === 'repeat') {
+    return { top: 58, left: 24, right: 24, bottom: 24 }
+  }
+
+  return { top: 42, left: 18, right: 18, bottom: 18 }
+}
+
+const getConstrainedNodeSize = (node: FlowNode, size: NodeSize) => {
+  if (!isScopeNode(node)) {
+    return size
+  }
+
+  const minSize = scopeMinSizes[node.blockKind]
+
+  return {
+    width: Math.max(size.width, minSize.width),
+    height: Math.max(size.height, minSize.height)
+  }
+}
+
+const persistNodeSize = (node: FlowNode, size: NodeSize) => {
+  if (!Number.isFinite(size.width) || !Number.isFinite(size.height)) return
+
+  node.width = size.width
+  node.height = size.height
+}
+
+const getRenderedNodeElement = (node: FlowNode) => {
+  return area?.nodeViews.get(node.id)?.element.querySelector<HTMLElement>('.custom-node') ?? null
+}
+
+const applyRenderedScopeSize = (node: FlowNode, size: NodeSize) => {
+  const element = getRenderedNodeElement(node)
+
+  if (!element) return
+
+  element.style.width = `${size.width}px`
+  element.style.height = `${size.height}px`
+}
+
+const rememberScopeSize = (node: FlowNode, size: NodeSize) => {
+  if (!isScopeNode(node)) return
+
+  const nextSize = getConstrainedNodeSize(node, size)
+
+  persistNodeSize(node, nextSize)
+  scopeSizeCache.set(node.id, nextSize)
+  applyRenderedScopeSize(node, nextSize)
+}
+
+const applyCachedScopeSize = (node: FlowNode | undefined | null) => {
+  if (!isScopeNode(node)) return
+
+  const cachedSize = scopeSizeCache.get(node.id)
+
+  if (cachedSize) {
+    persistNodeSize(node, cachedSize)
+  }
+}
+
+const lockRenderedScopeSize = (node: FlowNode | undefined | null) => {
+  if (!area || !isScopeNode(node)) return
+
+  const element = getRenderedNodeElement(node)
+
+  if (!element) {
+    applyCachedScopeSize(node)
+    return
+  }
+
+  rememberScopeSize(node, {
+    width: element.offsetWidth,
+    height: element.offsetHeight
+  })
+}
+
+const getChildNodes = (node: FlowNode) => {
+  if (!editor) return []
+
+  return (editor.getNodes() as FlowNode[]).filter((child) => child.parent === node.id)
+}
+
+const getEffectiveNodeSize = (node: FlowNode): NodeSize => {
+  const element = getRenderedNodeElement(node)
+  const renderedSize = element
+    ? {
+      width: element.offsetWidth,
+      height: element.offsetHeight
+    }
+    : null
+
+  if (isScopeNode(node)) {
+    const cachedSize = scopeSizeCache.get(node.id)
+
+    if (cachedSize) {
+      return {
+        width: Math.max(cachedSize.width, renderedSize?.width ?? 0),
+        height: Math.max(cachedSize.height, renderedSize?.height ?? 0)
+      }
+    }
+  }
+
+  return {
+    width: Math.max(Number.isFinite(node.width) ? node.width : 0, renderedSize?.width ?? 180),
+    height: Math.max(Number.isFinite(node.height) ? node.height : 0, renderedSize?.height ?? 120)
+  }
+}
+
+const syncScopeSizeFromChildren = (node: FlowNode | undefined | null): NodeSize | null => {
+  if (!editor || !isScopeNode(node)) return null
+
+  const children = getChildNodes(node)
+
+  for (const child of children) {
+    syncScopeSizeFromChildren(child)
+  }
+
+  if (children.length === 0) {
+    const padding = getScopePadding(node)
+    const nextSize = getConstrainedNodeSize(node, {
+      width: padding.left + padding.right,
+      height: padding.top + padding.bottom
+    })
+
+    rememberScopeSize(node, nextSize)
+
+    return nextSize
+  }
+
+  const childBoxes = children
+    .map((child) => {
+      const position = area?.nodeViews.get(child.id)?.position
+
+      if (!position) return null
+
+      return {
+        position,
+        size: getEffectiveNodeSize(child)
+      }
+    })
+    .filter((box): box is { position: { x: number; y: number }; size: NodeSize } => Boolean(box))
+
+  if (childBoxes.length === 0) {
+    lockRenderedScopeSize(node)
+    return getEffectiveNodeSize(node)
+  }
+
+  const padding = getScopePadding(node)
+  const left = Math.min(...childBoxes.map((box) => box.position.x))
+  const right = Math.max(...childBoxes.map((box) => box.position.x + box.size.width))
+  const top = Math.min(...childBoxes.map((box) => box.position.y))
+  const bottom = Math.max(...childBoxes.map((box) => box.position.y + box.size.height))
+
+  const nextSize = getConstrainedNodeSize(node, {
+    width: right - left + padding.left + padding.right,
+    height: bottom - top + padding.top + padding.bottom
+  })
+
+  rememberScopeSize(node, nextSize)
+
+  return nextSize
+}
+
+const syncScopeTreeSizes = (node: FlowNode | undefined | null) => {
+  if (!editor || !isScopeNode(node)) return
+
+  syncScopeSizeFromChildren(node)
+
+  const children = getChildNodes(node)
+
+  for (const child of children) {
+    syncScopeTreeSizes(child)
+  }
+}
+
+const getNodeDepth = (node: FlowNode) => {
+  if (!editor) return 0
+
+  let depth = 0
+  let current: FlowNode | null = node
+
+  while (current.parent) {
+    const parent = editor.getNode(current.parent) as FlowNode | undefined
+
+    if (!parent) break
+
+    depth++
+    current = parent
+  }
+
+  return depth
+}
+
+const syncAllScopeSizes = () => {
+  if (!editor) return
+
+  const scopeNodes = (editor.getNodes() as FlowNode[])
+    .filter(isScopeNode)
+    .sort((a, b) => getNodeDepth(b) - getNodeDepth(a))
+
+  for (const node of scopeNodes) {
+    syncScopeSizeFromChildren(node)
+  }
+}
+
+const getNodeFromPointerTarget = (target: EventTarget | null) => {
+  if (!editor || !area || !(target instanceof Node)) return null
+
+  for (const [nodeId, view] of area.nodeViews) {
+    if (view.element.contains(target)) {
+      return editor.getNode(nodeId) as FlowNode | undefined ?? null
+    }
+  }
+
+  return null
+}
+
+const lockScopeSizeBeforePointerDown = (event: PointerEvent) => {
+  syncScopeTreeSizes(getNodeFromPointerTarget(event.target))
+}
+
+const installScopeSizeGuards = () => {
+  if (!area || !reteContainer.value) return
+
+  reteContainer.value.addEventListener('pointerdown', lockScopeSizeBeforePointerDown, { capture: true })
+
+  area.addPipe((context) => {
+    if (context.type === 'render' && context.data.type === 'node') {
+      const node = context.data.payload as FlowNode
+
+      syncScopeSizeFromChildren(node)
+      applyCachedScopeSize(node)
+    }
+
+    if (context.type === 'noderesize' || context.type === 'noderesized') {
+      const node = editor?.getNode(context.data.id) as FlowNode | undefined
+
+      if (node) {
+        rememberScopeSize(node, context.data.size)
+      }
+    }
+
+    if (context.type === 'nodepicked' || context.type === 'nodetranslate') {
+      const node = editor?.getNode(context.data.id) as FlowNode | undefined
+
+      syncScopeTreeSizes(node)
+    }
+
+    return context
+  })
+}
+
+const installScopePostUpdateGuards = () => {
+  if (!area) return
+
+  area.addPipe((context) => {
+    if (
+      context.type === 'nodedragged' ||
+      context.type === 'nodetranslated' ||
+      context.type === 'noderesized' ||
+      context.type === 'noderemoved'
+    ) {
+      syncAllScopeSizes()
+    }
+
+    return context
+  })
+}
 // Rete editor logic
 const createLevelStartNode = async () => {
   if (!editor || !area) return
@@ -277,38 +566,19 @@ onMounted(async () => {
     padding: (nodeId) => {
       const node = editor?.getNode(nodeId) as FlowNode | undefined
 
-      if (node?.blockKind === 'ifwall') {
-        return { top: 92, left: 24, right: 24, bottom: 24 }
-      }
-
-      if (node?.blockKind === 'repeat') {
-        return { top: 58, left: 24, right: 24, bottom: 24 }
-      }
-
-      return { top: 42, left: 18, right: 18, bottom: 18 }
+      return getScopePadding(node)
     },
     size: (nodeId, size) => {
       const node = editor?.getNode(nodeId) as FlowNode | undefined
 
-      if (node?.blockKind === 'ifwall') {
-        return {
-          width: Math.max(size.width, 540),
-          height: Math.max(size.height, 360)
-        }
-      }
+      if (node) {
+        const nextSize = getConstrainedNodeSize(node, size)
 
-      if (node?.blockKind === 'repeat') {
-        return {
-          width: Math.max(size.width, 260),
-          height: Math.max(size.height, 190)
+        if (isScopeNode(node)) {
+          rememberScopeSize(node, nextSize)
         }
-      }
 
-      if (node?.blockKind === 'branch') {
-        return {
-          width: Math.max(size.width, 240),
-          height: Math.max(size.height, 150)
-        }
+        return nextSize
       }
 
       return size
@@ -316,10 +586,13 @@ onMounted(async () => {
   })
   scopes.addPreset(ScopesPresets.classic.setup())
 
+  installScopeSizeGuards()
+
   editor.use(area)
   area.use(connection)
   area.use(render)
   area.use(scopes)
+  installScopePostUpdateGuards()
   arrange = new AutoArrangePlugin<Schemes, AreaExtra>()
 
   arrange.addPreset(ArrangePresets.classic.setup())
@@ -473,6 +746,8 @@ const arrangeNodes = async () => {
 }
 
 onBeforeUnmount(() => {
+  reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
+  scopeSizeCache.clear()
   area?.destroy()
   editor = null
   area = null
