@@ -114,6 +114,7 @@ import { NodeEditor, ClassicPreset } from 'rete'
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin'
 import { VuePlugin, Presets, VueArea2D } from 'rete-vue-plugin'
+import { ScopesPlugin, Presets as ScopesPresets, type Scopes } from 'rete-scopes-plugin'
 import {
   AutoArrangePlugin,
   Presets as ArrangePresets,
@@ -126,20 +127,27 @@ import { useEditorFacade } from '@/composables/useEditorFacade'
 class FlowNode extends ClassicPreset.Node {
   width = 180
   height = 120
+  parent?: string
 
   blockId: string | null = null
   nodeKind: 'start' | 'block' | 'end' = 'block'
   category = 'default'
   color = '#8799f6'
   textColor = '#ffffff'
-  deletable = true    
+  deletable = true
+  blockKind: 'event' | 'action' | 'repeat' | 'ifwall' | 'branch' = 'action'
+  scopeRole?: 'repeat' | 'if-true' | 'if-else'
+  repeatCount = 3
+  condition = 'wallAhead'
+  onRepeatCountChange?: (value: number) => void
+  onConditionChange?: (value: string) => void
 }
 
 class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
 
 type Schemes = ClassicPreset.GetSchemes<FlowNode, FlowConnection>
 
-type AreaExtra = VueArea2D<Schemes>
+type AreaExtra = VueArea2D<Schemes> | Scopes
 
 type BlueprintPayload = {
   category: string
@@ -174,6 +182,18 @@ let area: AreaPlugin<Schemes, AreaExtra> | null = null
 let nodeIndex = 0
 let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
+let scopes: ScopesPlugin<Schemes, AreaExtra> | null = null
+const scopeSizeCache = new Map<string, { width: number; height: number }>()
+
+type ScopeBlockKind = 'ifwall' | 'repeat' | 'branch'
+type NodeSize = { width: number; height: number }
+type ScopePadding = { top: number; left: number; right: number; bottom: number }
+
+const scopeMinSizes: Record<ScopeBlockKind, NodeSize> = {
+  ifwall: { width: 540, height: 360 },
+  repeat: { width: 260, height: 190 },
+  branch: { width: 240, height: 150 }
+}
 
 /// Delete functionality
 let selectedNode: FlowNode | null = null
@@ -227,6 +247,291 @@ const restoreRightPane = () => {
   leftWidth.value = 60
   window.dispatchEvent(new Event('resize'))
 }
+
+const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { blockKind: ScopeBlockKind } => {
+  return node?.blockKind === 'ifwall' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
+}
+
+const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
+  if (node?.blockKind === 'ifwall') {
+    return { top: 92, left: 24, right: 24, bottom: 24 }
+  }
+
+  if (node?.blockKind === 'repeat') {
+    return { top: 58, left: 24, right: 24, bottom: 24 }
+  }
+
+  return { top: 42, left: 18, right: 18, bottom: 18 }
+}
+
+const getConstrainedNodeSize = (node: FlowNode, size: NodeSize) => {
+  if (!isScopeNode(node)) {
+    return size
+  }
+
+  const minSize = scopeMinSizes[node.blockKind]
+
+  return {
+    width: Math.max(size.width, minSize.width),
+    height: Math.max(size.height, minSize.height)
+  }
+}
+
+const persistNodeSize = (node: FlowNode, size: NodeSize) => {
+  if (!Number.isFinite(size.width) || !Number.isFinite(size.height)) return
+
+  node.width = size.width
+  node.height = size.height
+}
+
+const getRenderedNodeElement = (node: FlowNode) => {
+  return area?.nodeViews.get(node.id)?.element.querySelector<HTMLElement>('.custom-node') ?? null
+}
+
+const applyRenderedScopeSize = (node: FlowNode, size: NodeSize) => {
+  const element = getRenderedNodeElement(node)
+
+  if (!element) return
+
+  element.style.width = `${size.width}px`
+  element.style.height = `${size.height}px`
+}
+
+const rememberScopeSize = (node: FlowNode, size: NodeSize) => {
+  if (!isScopeNode(node)) return
+
+  const nextSize = getConstrainedNodeSize(node, size)
+
+  persistNodeSize(node, nextSize)
+  scopeSizeCache.set(node.id, nextSize)
+  applyRenderedScopeSize(node, nextSize)
+}
+
+const applyCachedScopeSize = (node: FlowNode | undefined | null) => {
+  if (!isScopeNode(node)) return
+
+  const cachedSize = scopeSizeCache.get(node.id)
+
+  if (cachedSize) {
+    persistNodeSize(node, cachedSize)
+  }
+}
+
+const lockRenderedScopeSize = (node: FlowNode | undefined | null) => {
+  if (!area || !isScopeNode(node)) return
+
+  const element = getRenderedNodeElement(node)
+
+  if (!element) {
+    applyCachedScopeSize(node)
+    return
+  }
+
+  rememberScopeSize(node, {
+    width: element.offsetWidth,
+    height: element.offsetHeight
+  })
+}
+
+const getChildNodes = (node: FlowNode) => {
+  if (!editor) return []
+
+  return (editor.getNodes() as FlowNode[]).filter((child) => child.parent === node.id)
+}
+
+const getEffectiveNodeSize = (node: FlowNode): NodeSize => {
+  const element = getRenderedNodeElement(node)
+  const renderedSize = element
+    ? {
+      width: element.offsetWidth,
+      height: element.offsetHeight
+    }
+    : null
+
+  if (isScopeNode(node)) {
+    const cachedSize = scopeSizeCache.get(node.id)
+
+    if (cachedSize) {
+      return {
+        width: Math.max(cachedSize.width, renderedSize?.width ?? 0),
+        height: Math.max(cachedSize.height, renderedSize?.height ?? 0)
+      }
+    }
+  }
+
+  return {
+    width: Math.max(Number.isFinite(node.width) ? node.width : 0, renderedSize?.width ?? 180),
+    height: Math.max(Number.isFinite(node.height) ? node.height : 0, renderedSize?.height ?? 120)
+  }
+}
+
+const syncScopeSizeFromChildren = (node: FlowNode | undefined | null): NodeSize | null => {
+  if (!editor || !isScopeNode(node)) return null
+
+  const children = getChildNodes(node)
+
+  for (const child of children) {
+    syncScopeSizeFromChildren(child)
+  }
+
+  if (children.length === 0) {
+    const padding = getScopePadding(node)
+    const nextSize = getConstrainedNodeSize(node, {
+      width: padding.left + padding.right,
+      height: padding.top + padding.bottom
+    })
+
+    rememberScopeSize(node, nextSize)
+
+    return nextSize
+  }
+
+  const childBoxes = children
+    .map((child) => {
+      const position = area?.nodeViews.get(child.id)?.position
+
+      if (!position) return null
+
+      return {
+        position,
+        size: getEffectiveNodeSize(child)
+      }
+    })
+    .filter((box): box is { position: { x: number; y: number }; size: NodeSize } => Boolean(box))
+
+  if (childBoxes.length === 0) {
+    lockRenderedScopeSize(node)
+    return getEffectiveNodeSize(node)
+  }
+
+  const padding = getScopePadding(node)
+  const left = Math.min(...childBoxes.map((box) => box.position.x))
+  const right = Math.max(...childBoxes.map((box) => box.position.x + box.size.width))
+  const top = Math.min(...childBoxes.map((box) => box.position.y))
+  const bottom = Math.max(...childBoxes.map((box) => box.position.y + box.size.height))
+
+  const nextSize = getConstrainedNodeSize(node, {
+    width: right - left + padding.left + padding.right,
+    height: bottom - top + padding.top + padding.bottom
+  })
+
+  rememberScopeSize(node, nextSize)
+
+  return nextSize
+}
+
+const syncScopeTreeSizes = (node: FlowNode | undefined | null) => {
+  if (!editor || !isScopeNode(node)) return
+
+  syncScopeSizeFromChildren(node)
+
+  const children = getChildNodes(node)
+
+  for (const child of children) {
+    syncScopeTreeSizes(child)
+  }
+}
+
+const getNodeDepth = (node: FlowNode) => {
+  if (!editor) return 0
+
+  let depth = 0
+  let current: FlowNode | null = node
+
+  while (current.parent) {
+    const parent = editor.getNode(current.parent) as FlowNode | undefined
+
+    if (!parent) break
+
+    depth++
+    current = parent
+  }
+
+  return depth
+}
+
+const syncAllScopeSizes = () => {
+  if (!editor) return
+
+  const scopeNodes = (editor.getNodes() as FlowNode[])
+    .filter(isScopeNode)
+    .sort((a, b) => getNodeDepth(b) - getNodeDepth(a))
+
+  for (const node of scopeNodes) {
+    syncScopeSizeFromChildren(node)
+  }
+}
+
+const getNodeFromPointerTarget = (target: EventTarget | null) => {
+  if (!editor || !area || !(target instanceof Node)) return null
+
+  for (const [nodeId, view] of area.nodeViews) {
+    if (view.element.contains(target)) {
+      return editor.getNode(nodeId) as FlowNode | undefined ?? null
+    }
+  }
+
+  return null
+}
+
+const lockScopeSizeBeforePointerDown = (event: PointerEvent) => {
+  const node = getNodeFromPointerTarget(event.target)
+
+  if (node) {
+    syncScopeTreeSizes(node)
+    return
+  }
+
+  syncAllScopeSizes()
+}
+
+const installScopeSizeGuards = () => {
+  if (!area || !reteContainer.value) return
+
+  reteContainer.value.addEventListener('pointerdown', lockScopeSizeBeforePointerDown, { capture: true })
+
+  area.addPipe((context) => {
+    if (context.type === 'render' && context.data.type === 'node') {
+      const node = context.data.payload as FlowNode
+
+      syncScopeSizeFromChildren(node)
+      applyCachedScopeSize(node)
+    }
+
+    if (context.type === 'noderesize' || context.type === 'noderesized') {
+      const node = editor?.getNode(context.data.id) as FlowNode | undefined
+
+      if (node) {
+        rememberScopeSize(node, context.data.size)
+      }
+    }
+
+    if (context.type === 'nodepicked' || context.type === 'nodetranslate') {
+      const node = editor?.getNode(context.data.id) as FlowNode | undefined
+
+      syncScopeTreeSizes(node)
+    }
+
+    return context
+  })
+}
+
+const installScopePostUpdateGuards = () => {
+  if (!area) return
+
+  area.addPipe((context) => {
+    if (
+      context.type === 'nodedragged' ||
+      context.type === 'nodetranslated' ||
+      context.type === 'noderesized' ||
+      context.type === 'noderemoved'
+    ) {
+      syncAllScopeSizes()
+    }
+
+    return context
+  })
+}
 // Rete editor logic
 const createLevelStartNode = async () => {
   if (!editor || !area) return
@@ -239,6 +544,8 @@ const createLevelStartNode = async () => {
   node.textColor = '#ffffff'
   node.deletable = false
   node.nodeKind = 'start'
+  node.blockKind = 'event'
+  node.blockId = 'level-start'
 
   node.addOutput('out', new ClassicPreset.Output(socket))
 
@@ -263,22 +570,47 @@ onMounted(async () => {
   const connection = new ConnectionPlugin<Schemes, AreaExtra>()
   const render = new VuePlugin<Schemes, AreaExtra>()
 
-  render.addPreset(Presets.classic.setup())
-  // render.addPreset(
-  //   Presets.classic.setup({
-  //     customize: {
-  //       node() {
-  //         return CustomNode
-
-  //       }
-  //     }
-  //   })
-  // )
+  render.addPreset(
+    Presets.classic.setup({
+      customize: {
+        node() {
+          return CustomNode
+        }
+      }
+    })
+  )
   connection.addPreset(ConnectionPresets.classic.setup())
+  scopes = new ScopesPlugin<Schemes, AreaExtra>({
+    padding: (nodeId) => {
+      const node = editor?.getNode(nodeId) as FlowNode | undefined
+
+      return getScopePadding(node)
+    },
+    size: (nodeId, size) => {
+      const node = editor?.getNode(nodeId) as FlowNode | undefined
+
+      if (node) {
+        const nextSize = getConstrainedNodeSize(node, size)
+
+        if (isScopeNode(node)) {
+          rememberScopeSize(node, nextSize)
+        }
+
+        return nextSize
+      }
+
+      return size
+    }
+  })
+  scopes.addPreset(ScopesPresets.classic.setup())
+
+  installScopeSizeGuards()
 
   editor.use(area)
   area.use(connection)
   area.use(render)
+  area.use(scopes)
+  installScopePostUpdateGuards()
   arrange = new AutoArrangePlugin<Schemes, AreaExtra>()
 
   arrange.addPreset(ArrangePresets.classic.setup())
@@ -288,8 +620,6 @@ onMounted(async () => {
   AreaExtensions.selectableNodes(area, AreaExtensions.selector(), {
     accumulating: AreaExtensions.accumulateOnCtrl()
   })
-
-  AreaExtensions.simpleNodesOrder(area)
 
   area.addPipe((context) => {
     if (context.type === 'nodepicked') {
@@ -313,6 +643,10 @@ onMounted(async () => {
         selectedNode = null
         deleteButtonPosition.value = null
       }
+    }
+
+    if (context.type === 'nodetranslated' && selectedNode?.id === context.data.id) {
+      updateDeleteButtonPosition(selectedNode)
     }
 
     return context
@@ -355,28 +689,50 @@ const updateDeleteButtonPosition = (node: FlowNode) => {
   }
 }
 
-const deleteSelectedNode = async () => {
-  if (!editor || !selectedNode || !selectedNode.deletable) return
+const collectDescendants = (nodeId: string): FlowNode[] => {
+  if (!editor) return []
 
-  const node = selectedNode
+  const descendants: FlowNode[] = []
+  const children = (editor.getNodes() as FlowNode[]).filter((node) => node.parent === nodeId)
+
+  for (const child of children) {
+    descendants.push(...collectDescendants(child.id))
+    descendants.push(child)
+  }
+
+  return descendants
+}
+
+const removeConnectionsForNodes = async (nodeIds: Set<string>) => {
+  if (!editor) return
 
   const connections = editor
     .getConnections()
     .filter((connection) => {
-      return (
-        connection.source === node.id ||
-        connection.target === node.id
-      )
+      return nodeIds.has(connection.source) || nodeIds.has(connection.target)
     })
 
   for (const connection of connections) {
     await editor.removeConnection(connection.id)
   }
+}
 
-  await editor.removeNode(node.id)
+const deleteSelectedNode = async () => {
+  if (!editor || !selectedNode || !selectedNode.deletable) return
+
+  const node = selectedNode
+  const descendants = collectDescendants(node.id)
+  const nodesToRemove = [...descendants, node]
+  const nodeIds = new Set(nodesToRemove.map((entry) => entry.id))
+
+  await removeConnectionsForNodes(nodeIds)
+
+  for (const entry of nodesToRemove) {
+    await editor.removeNode(entry.id)
+  }
 
   if (lastNode?.id === node.id) {
-    const nodes = editor.getNodes() as FlowNode[]
+    const nodes = (editor.getNodes() as FlowNode[]).filter((entry) => entry.blockKind !== 'branch')
     lastNode = nodes[nodes.length - 1] ?? null
   }
 
@@ -455,24 +811,50 @@ const runVisibleProgram = () => {
 }
 
 onBeforeUnmount(() => {
+  reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
+  scopeSizeCache.clear()
   area?.destroy()
   editor = null
   area = null
+  scopes = null
 })
 
-const addReteNode = async (payload: BlueprintPayload) => {
-  if (!editor || !area) return
+const getBlockKind = (blockId: string): FlowNode['blockKind'] => {
+  if (blockId === 'repeat-x') return 'repeat'
+  if (blockId === 'if-wall') return 'ifwall'
+  return 'action'
+}
 
-  const socket = new ClassicPreset.Socket(payload.category)
+const createFlowNode = (payload: BlueprintPayload) => {
   const node = new FlowNode(payload.actionLabel)
+  const socket = new ClassicPreset.Socket(payload.category)
+  const isLevelEnd = payload.actionId === 'level-end'
 
   node.category = payload.category
   node.color = payload.color
   node.textColor = payload.textColor
   node.blockId = payload.actionId
-
-  const isLevelEnd = payload.actionId === 'level-end'
   node.nodeKind = isLevelEnd ? 'end' : 'block'
+  node.blockKind = getBlockKind(payload.actionId)
+
+  if (node.blockKind === 'repeat') {
+    node.width = 260
+    node.height = 190
+    node.scopeRole = 'repeat'
+    node.repeatCount = 3
+    node.onRepeatCountChange = (value: number) => {
+      node.repeatCount = value
+    }
+  }
+
+  if (node.blockKind === 'ifwall') {
+    node.width = 540
+    node.height = 360
+    node.condition = 'wallAhead'
+    node.onConditionChange = (value: string) => {
+      node.condition = value
+    }
+  }
 
   node.addInput('in', new ClassicPreset.Input(socket))
 
@@ -480,34 +862,175 @@ const addReteNode = async (payload: BlueprintPayload) => {
     node.addOutput('out', new ClassicPreset.Output(socket))
   }
 
-  await editor.addNode(node)
+  return node
+}
 
-  await area.translate(node.id, {
-    x: 80 + nodeIndex * 160,
-    y: 80
-  })
+const canContainChildren = (node: FlowNode) => {
+  return node.blockKind === 'repeat' || node.blockKind === 'branch'
+}
 
-  if (lastNode && lastNode.nodeKind !== 'end') {
-    if (!lastNode.outputs.out) {
-      const lastSocket = new ClassicPreset.Socket(lastNode.category)
-      lastNode.addOutput('out', new ClassicPreset.Output(lastSocket))
-      await area.update('node', lastNode.id)
-    }
+const getInsertionScope = () => {
+  if (!editor || !selectedNode) return null
 
-    const connection = new FlowConnection(
-      lastNode,
-      'out',
-      node,
-      'in'
-    )
-
-    await editor.addConnection(connection)
+  if (canContainChildren(selectedNode)) {
+    return selectedNode
   }
 
-  lastNode = node
+  if (!selectedNode.parent) {
+    return null
+  }
+
+  return editor.getNode(selectedNode.parent) as FlowNode | undefined ?? null
+}
+
+const getNodePosition = (node: FlowNode) => {
+  return area?.nodeViews.get(node.id)?.position ?? { x: 80, y: 80 }
+}
+
+const getScopedChildren = (scopeId: string) => {
+  if (!editor) return []
+
+  return (editor.getNodes() as FlowNode[])
+    .filter((node) => node.parent === scopeId && node.blockKind !== 'branch')
+}
+
+const getLastScopedNode = (scopeId: string) => {
+  const scopedChildren = getScopedChildren(scopeId)
+
+  return scopedChildren[scopedChildren.length - 1] ?? null
+}
+
+const updateScopeChain = async (node: FlowNode | null) => {
+  if (!editor || !scopes || !node) return
+
+  let current: FlowNode | null = node
+
+  while (current) {
+    await scopes.update(current.id)
+    current = current.parent ? (editor.getNode(current.parent) as FlowNode | undefined ?? null) : null
+  }
+}
+
+const createBranchScopeNode = (label: string, role: 'if-true' | 'if-else', parent: FlowNode) => {
+  const node = new FlowNode(label)
+
+  node.parent = parent.id
+  node.category = 'CONTROL'
+  node.color = role === 'if-true' ? '#f1fff7' : '#fff7ef'
+  node.textColor = role === 'if-true' ? '#1d4f33' : '#704013'
+  node.deletable = false
+  node.blockId = role
+  node.blockKind = 'branch'
+  node.scopeRole = role
+  node.width = 240
+  node.height = 150
+
+  return node
+}
+
+const connectAfterLastNode = async (node: FlowNode) => {
+  if (!editor || !area || !lastNode) return
+  if (lastNode.nodeKind === 'end') return
+
+  if (!lastNode.outputs.out) {
+    const lastSocket = new ClassicPreset.Socket(lastNode.category)
+    lastNode.addOutput('out', new ClassicPreset.Output(lastSocket))
+    await area.update('node', lastNode.id)
+  }
+
+  const connection = new FlowConnection(
+    lastNode,
+    'out',
+    node,
+    'in'
+  )
+
+  await editor.addConnection(connection)
+}
+
+const connectAfterScopedNode = async (node: FlowNode, previousNode: FlowNode | null) => {
+  if (!editor || !area || !previousNode) return
+  if (previousNode.nodeKind === 'end') return
+
+  if (!previousNode.outputs.out) {
+    const previousSocket = new ClassicPreset.Socket(previousNode.category)
+    previousNode.addOutput('out', new ClassicPreset.Output(previousSocket))
+    await area.update('node', previousNode.id)
+  }
+
+  if (!node.inputs.in) return
+
+  const connection = new FlowConnection(
+    previousNode,
+    'out',
+    node,
+    'in'
+  )
+
+  await editor.addConnection(connection)
+}
+
+const addIfWallBranches = async (node: FlowNode, x: number, y: number) => {
+  if (!editor || !area || !scopes) return
+
+  const trueBranch = createBranchScopeNode('True Branch', 'if-true', node)
+  const elseBranch = createBranchScopeNode('Else Branch', 'if-else', node)
+
+  await editor.addNode(trueBranch)
+  await editor.addNode(elseBranch)
+
+  await area.translate(trueBranch.id, {
+    x: x + 30,
+    y: y + 104
+  })
+  await area.translate(elseBranch.id, {
+    x: x + 280,
+    y: y + 104
+  })
+  await scopes.update(node.id)
+}
+
+const addReteNode = async (payload: BlueprintPayload) => {
+  if (!editor || !area) return
+
+  const targetScope = getInsertionScope()
+  const previousScopedNode = targetScope ? getLastScopedNode(targetScope.id) : null
+  const node = createFlowNode(payload)
+  const scopePosition = targetScope ? getNodePosition(targetScope) : null
+  const scopedIndex = targetScope ? getScopedChildren(targetScope.id).length : 0
+  const x = scopePosition ? scopePosition.x + 28 + scopedIndex * 150 : 80 + nodeIndex * 190
+  const y = scopePosition ? scopePosition.y + 70 : 80
+
+  if (targetScope) {
+    node.parent = targetScope.id
+  }
+
+  await editor.addNode(node)
+  await area.translate(node.id, { x, y })
+
+  if (targetScope) {
+    await connectAfterScopedNode(node, previousScopedNode)
+  } else {
+    await connectAfterLastNode(node)
+  }
+
+  if (node.blockKind === 'ifwall') {
+    await addIfWallBranches(node, x, y)
+  }
+
+  if (!targetScope) {
+    lastNode = node
+  }
   nodeIndex++
 
-  await arrangeNodes()
+  if (targetScope) {
+    await updateScopeChain(targetScope)
+    await AreaExtensions.zoomAt(area, editor.getNodes())
+  } else if (node.blockKind === 'ifwall' || node.blockKind === 'repeat') {
+    await AreaExtensions.zoomAt(area, editor.getNodes())
+  } else {
+    await arrangeNodes()
+  }
 
   closeRadialMenu()
 }

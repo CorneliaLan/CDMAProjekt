@@ -22,6 +22,7 @@
     "rete-area-plugin": "^2.1.5",
     "rete-auto-arrange-plugin": "^2.0.2",
     "rete-connection-plugin": "^2.0.5",
+    "rete-scopes-plugin": "^2.1.1",
     "rete-vue-plugin": "^2.1.2",
     "vue": "^3.5.33",
     "vue-router": "^4.6.4"
