@@ -122,7 +122,7 @@ import {
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
 
-import { useEditorFacade } from '@/composables/useEditorFacade'
+import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
 
 class FlowNode extends ClassicPreset.Node {
   width = 180
@@ -171,7 +171,7 @@ const {
   gameState,
   executionResult,
   availableBlocks,
-  setProgramFromBlockIds,
+  setProgram,
   runProgram
 } = useEditorFacade(levelId)
 
@@ -763,7 +763,7 @@ const arrangeNodes = async () => {
   await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
-const deriveProgramBlockIds = (): string[] => {
+const deriveProgram = (): ProgramNode[] => {
   if (!editor) return []
 
   const nodes = editor.getNodes() as FlowNode[]
@@ -773,40 +773,54 @@ const deriveProgramBlockIds = (): string[] => {
 
   if (!startNode) return []
 
-  const blockIds: string[] = []
-  const visitedNodeIds = new Set<string>([startNode.id])
-  let currentNode = startNode
+  const walkChain = (firstNodeId: string, scopeIds: Set<string>): ProgramNode[] => {
+    const result: ProgramNode[] = []
+    const visited = new Set<string>()
+    let currentId: string | undefined = firstNodeId
 
-  while (true) {
-    const nextConnection = connections.find((connection) => connection.source === currentNode.id)
-    if (!nextConnection) break
+    while (currentId && !visited.has(currentId) && scopeIds.has(currentId)) {
+      const node = nodesById.get(currentId)!
+      visited.add(currentId)
 
-    const nextNode = nodesById.get(nextConnection.target)
-    if (!nextNode || visitedNodeIds.has(nextNode.id)) break
+      if (node.nodeKind !== 'end' && node.blockId) {
+        const pNode: ProgramNode = { blockId: node.blockId }
 
-    visitedNodeIds.add(nextNode.id)
+        if (node.blockKind === 'repeat') {
+          pNode.repeatCount = node.repeatCount
+          pNode.children = collectRepeatChildren(node.id)
+        }
 
-    if (nextNode.nodeKind === 'end') {
-      break
+        result.push(pNode)
+      }
+
+      const nextConn = connections.find((c) => c.source === currentId && scopeIds.has(c.target))
+      currentId = nextConn?.target
     }
 
-    if (nextNode.blockId) {
-      blockIds.push(nextNode.blockId)
-    }
-
-    currentNode = nextNode
+    return result
   }
 
-  return blockIds
+  const collectRepeatChildren = (repeatNodeId: string): ProgramNode[] => {
+    const children = (nodes as FlowNode[]).filter(
+      (n) => n.parent === repeatNodeId && n.blockKind !== 'branch'
+    )
+    const childIds = new Set(children.map((n) => n.id))
+    const first = children.find(
+      (n) => !connections.some((c) => c.target === n.id && childIds.has(c.source))
+    )
+    if (!first) return []
+    return walkChain(first.id, childIds)
+  }
+
+  const topLevelIds = new Set(nodes.filter((n) => !n.parent).map((n) => n.id))
+  const firstId = connections.find((c) => c.source === startNode.id)?.target
+  if (!firstId) return []
+  return walkChain(firstId, topLevelIds)
 }
 
 const runVisibleProgram = () => {
-  const blockIds = deriveProgramBlockIds()
-
-  if (!setProgramFromBlockIds(blockIds)) {
-    return
-  }
-
+  const program = deriveProgram()
+  if (!setProgram(program)) return
   runProgram()
 }
 

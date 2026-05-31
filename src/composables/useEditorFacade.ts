@@ -7,6 +7,7 @@ import type { BaseBlock } from '@/core/editor/BaseBlock';
 import { BlockCategory } from '@/core/editor/BlockCategories';
 import { getLevelById, type LevelDefinition } from '@/core/levels/levelCatalog';
 import { registerBlocksByIds } from '@/core/setup/registerDefaultBlocks';
+import { RepeatBlock } from '@/core/editor/blocks/repeat/RepeatBlock';
 
 const registry = BlockRegistry.getInstance();
 
@@ -16,8 +17,10 @@ type AvailableBlock = {
   category: BlockCategory
 }
 
-type RepeatProgramBlock = BaseBlock & {
-  iterations: number
+export type ProgramNode = {
+  blockId: string
+  repeatCount?: number
+  children?: ProgramNode[]
 }
 
 function createEngine(level: LevelDefinition): GameEngine {
@@ -87,19 +90,33 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     return true;
   };
 
-  const setProgramFromBlockIds = (blockIds: string[]): boolean => {
-    const nextProgram: BaseBlock[] = [];
+  const setProgram = (nodes: ProgramNode[]): boolean => {
+    const buildBlocks = (nodeList: ProgramNode[]): BaseBlock[] | null => {
+      const result: BaseBlock[] = [];
 
-    for (const blockId of blockIds) {
-      const block = registry.getBlock(blockId);
-      if (!block) {
-        return false;
+      for (const node of nodeList) {
+        const block = registry.getBlock(node.blockId);
+        if (!block) return null;
+
+        if (node.repeatCount !== undefined && block instanceof RepeatBlock) {
+          block.iterations = node.repeatCount;
+        }
+
+        if (node.children) {
+          const childBlocks = buildBlocks(node.children);
+          if (!childBlocks) return null;
+          block.children = childBlocks;
+        }
+
+        result.push(block);
       }
 
-      nextProgram.push(block);
-    }
+      return result;
+    };
 
-    programBlocks.value = nextProgram;
+    const blocks = buildBlocks(nodes);
+    if (!blocks) return false;
+    programBlocks.value = blocks;
     return true;
   };
 
@@ -114,24 +131,6 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     }
 
     programBlocks.value[index] = replacement;
-    return true;
-  };
-
-  const setRepeatIterations = (index: number, iterations: number): boolean => {
-    if (index < 0 || index >= programBlocks.value.length) {
-      return false;
-    }
-
-    if (!Number.isInteger(iterations) || iterations < 1) {
-      return false;
-    }
-
-    const block = programBlocks.value[index];
-    if (block.category !== BlockCategory.REPEAT) {
-      return false;
-    }
-
-    (block as RepeatProgramBlock).iterations = iterations;
     return true;
   };
 
@@ -170,9 +169,8 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     availableBlocks,
     program,
     addProgramBlock,
-    setProgramFromBlockIds,
+    setProgram,
     replaceProgramBlock,
-    setRepeatIterations,
     deleteProgramBlock,
     clearProgram,
     runProgram
