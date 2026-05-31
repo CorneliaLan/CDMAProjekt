@@ -62,6 +62,7 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
+              @reset="resetGame"
           />
 
           <button class="expand-preview-button" @click="expandPreview">
@@ -90,6 +91,7 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
+              @reset="resetGame"
           />
         </div>
       </div>
@@ -176,6 +178,7 @@ const {
   executionResult,
   availableBlocks,
   setProgram,
+  resetGame,
   runProgram
 } = useEditorFacade(levelId)
 

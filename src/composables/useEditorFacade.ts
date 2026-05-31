@@ -173,6 +173,14 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   // Load the current level immediately and reload it when the route level id changes.
   watch(() => unref(levelId), loadLevel, { immediate: true, flush: 'sync' });
 
+  const resetGame = (): void => {
+    if (!level.value) return;
+    const newEngine = createEngine(level.value);
+    engine.value = newEngine;
+    gameState.value = newEngine.getState().clone();
+    executionResult.value = null;
+  };
+
   const runProgram = (): boolean => {
     if (!level.value) {
       return false;
@@ -197,6 +205,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     replaceProgramBlock,
     deleteProgramBlock,
     clearProgram,
+    resetGame,
     runProgram
   };
 }

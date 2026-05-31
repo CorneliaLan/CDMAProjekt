@@ -62,7 +62,7 @@
     </div>
 
     <div class="control-wrapper">
-      <ControlBar @play="emit('play')" />
+      <ControlBar @play="emit('play')" @reset="emit('reset')" />
     </div>
   </div>
 </template>
@@ -91,6 +91,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   play: []
+  reset: []
 }>()
 
 const previewGrid = computed(() => props.gameState?.grid ?? props.level?.grid ?? [])
