@@ -16,6 +16,8 @@ export class GameEngine {
     stepsExecuted: 0
   };
 
+  private snapshots: GameState[] = []
+
   constructor(initialState: GameState) {
     this.state = initialState;
   }
@@ -137,8 +139,11 @@ export class GameEngine {
 
   public run(program: BaseBlock[]): ExecutionResult {
     this.runtimeError = null;
+    this.snapshots = []
     const context = this.createContext();
     let stepsExecuted = 0;
+
+    this.snapshots.push(this.state.clone())
 
     for (const [stepIndex, block] of program.entries()) {
       if (context.shouldStopExecution()) {
@@ -151,6 +156,8 @@ export class GameEngine {
       if (this.debugEnabled) {
         console.log(`[GameEngine] ${stepIndex + 1}. ${block.id} -> (${this.state.playerX}, ${this.state.playerY})`);
       }
+      
+      this.snapshots.push(this.state.clone())
 
       if (context.shouldStopExecution()) {
         break;
@@ -172,5 +179,9 @@ export class GameEngine {
 
   public getLastResult(): ExecutionResult {
     return this.lastResult;
+  }
+
+  getSnapshots(): GameState[] {
+    return this.snapshots;
   }
 }

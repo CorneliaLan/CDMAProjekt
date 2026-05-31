@@ -12,6 +12,7 @@
         :game-state="gameState"
         :execution-result="executionResult"
         @play="runProgram"
+        @reset="resetProgram"
       />
       </div>
     </ion-content>
@@ -27,7 +28,7 @@ import { colors } from '@/theme/colors'
 import { useEditorFacade } from '@/composables/useEditorFacade'
 
 const defaultLevelId = ref(1)
-const { level, gameState, executionResult, runProgram } = useEditorFacade(defaultLevelId)
+const { level, gameState, executionResult, runProgram, resetProgram } = useEditorFacade(defaultLevelId)
 </script>
 
 <style scoped>

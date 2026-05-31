@@ -14,7 +14,7 @@
 
       <div class="divider"></div>
 
-      <ion-icon name="refresh"></ion-icon>
+      <ion-icon name="refresh" @click="emit('reset')" ></ion-icon>
     </div>
 
   </div>
@@ -43,6 +43,7 @@ addIcons({
 
 const emit = defineEmits<{
   play: []
+  reset: []
 }>()
 </script>
 

@@ -150,7 +150,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   // Load the current level immediately and reload it when the route level id changes.
   watch(() => unref(levelId), loadLevel, { immediate: true, flush: 'sync' });
 
-  const runProgram = (): boolean => {
+  /*const runProgram = (): boolean => {
     if (!level.value) {
       return false;
     }
@@ -161,7 +161,47 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     executionResult.value = newEngine.run(programBlocks.value);
     gameState.value = newEngine.getState().clone();
     return true;
-  };
+  };*/
+
+  const snapshots = ref<GameState[]>([])
+
+  const runProgram = (): GameState[] | null => {
+    if (!level.value) return null
+
+    const newEngine = createEngine(level.value)
+    engine.value = newEngine
+
+    const result = newEngine.run(programBlocks.value)
+    executionResult.value = result
+
+    const snaps = newEngine.getSnapshots()
+
+    snapshots.value = snaps;
+
+    gameState.value = snaps[0] ?? newEngine.getState();
+
+    return snaps;
+  }
+
+  const resetProgram = () => {
+    executionResult.value = null
+    engine.value = null
+    snapshots.value = []
+
+    if (!level.value) return
+
+    const initial = new GameState(
+      level.value.grid,
+      level.value.startX,
+      level.value.startY
+    )
+
+    gameState.value = null
+
+    queueMicrotask(() => {
+      gameState.value = initial.clone()
+    })
+  }
 
   return {
     level,
@@ -175,6 +215,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     setRepeatIterations,
     deleteProgramBlock,
     clearProgram,
-    runProgram
+    runProgram,
+    resetProgram
   };
 }

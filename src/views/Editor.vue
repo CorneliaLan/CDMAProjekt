@@ -62,6 +62,7 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
+              @reset="resetProgram"
           />
 
           <button class="expand-preview-button" @click="expandPreview">
@@ -90,6 +91,7 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
+              @reset="resetProgram"
           />
         </div>
       </div>
@@ -172,7 +174,8 @@ const {
   executionResult,
   availableBlocks,
   setProgramFromBlockIds,
-  runProgram
+  runProgram,
+  resetProgram
 } = useEditorFacade(levelId)
 
 const reteContainer = ref<HTMLElement | null>(null)
@@ -807,7 +810,25 @@ const runVisibleProgram = () => {
     return
   }
 
-  runProgram()
+  const snaps = runProgram();
+  if (!snaps || snaps.length === 0) {
+    return;
+  }
+
+  let index = 0;
+
+  gameState.value = snaps[0];
+
+  const interval = window.setInterval(() => {
+    index++;
+
+    if (index >= snaps.length) {
+      clearInterval(interval);
+      return;
+    }
+
+    gameState.value = snaps[index];
+  }, 400);
 }
 
 onBeforeUnmount(() => {
