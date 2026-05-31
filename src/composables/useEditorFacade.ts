@@ -8,6 +8,7 @@ import { BlockCategory } from '@/core/editor/BlockCategories';
 import { getLevelById, type LevelDefinition } from '@/core/levels/levelCatalog';
 import { registerBlocksByIds } from '@/core/setup/registerDefaultBlocks';
 import { RepeatBlock } from '@/core/editor/blocks/repeat/RepeatBlock';
+import { BaseIfBlock } from '@/core/editor/blocks/control/BaseIfBlock';
 
 const registry = BlockRegistry.getInstance();
 
@@ -21,6 +22,9 @@ export type ProgramNode = {
   blockId: string
   repeatCount?: number
   children?: ProgramNode[]
+  condition?: string
+  trueChildren?: ProgramNode[]
+  elseChildren?: ProgramNode[]
 }
 
 function createEngine(level: LevelDefinition): GameEngine {
@@ -106,6 +110,22 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
           const childBlocks = buildBlocks(node.children);
           if (!childBlocks) return null;
           block.children = childBlocks;
+        }
+
+        if (block instanceof BaseIfBlock) {
+          if (node.condition) {
+            block.condition = node.condition;
+          }
+          if (node.trueChildren) {
+            const tc = buildBlocks(node.trueChildren);
+            if (!tc) return null;
+            block.trueChildren = tc;
+          }
+          if (node.elseChildren) {
+            const ec = buildBlocks(node.elseChildren);
+            if (!ec) return null;
+            block.elseChildren = ec;
+          }
         }
 
         result.push(block);

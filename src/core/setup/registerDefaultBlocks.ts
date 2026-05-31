@@ -4,6 +4,7 @@ import { MoveLeftBlock } from '../editor/blocks/action/MoveLeftBlock';
 import { MoveRightBlock } from '../editor/blocks/action/MoveRightBlock';
 import { MoveUpBlock } from '../editor/blocks/action/MoveUpBlock';
 import { IfWallBlock } from '../editor/blocks/control/IfWallBlock';
+import { IfChestBlock } from '../editor/blocks/control/IfChestBlock';
 import { RepeatBlock } from '../editor/blocks/repeat/RepeatBlock';
 //import { LevelEndBlock } from '../editor/blocks/event/LevelEndBlock';
 
@@ -16,6 +17,7 @@ const BLOCK_FACTORY_CATALOG: Record<string, BlockFactory> = {
   'move-right': () => new MoveRightBlock(),
   'move-up': () => new MoveUpBlock(),
   'if-wall': () => new IfWallBlock(),
+  'if-chest': () => new IfChestBlock(),
   'repeat-x': () => new RepeatBlock(),
   //'level-end': () => new LevelEndBlock()
 };

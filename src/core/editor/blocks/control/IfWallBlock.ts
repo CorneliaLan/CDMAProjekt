@@ -1,49 +1,29 @@
-import { BaseBlock } from '../../BaseBlock';
 import { BlockCategory } from '../../BlockCategories';
 import { ExecutionContext } from '@/core/engine/ExecutionContext';
+import { BaseIfBlock } from './BaseIfBlock';
 
-export class IfWallBlock extends BaseBlock {
+export type WallCondition = 'wallUp' | 'wallDown' | 'wallLeft' | 'wallRight'
+
+export const WALL_CONDITION_OPTIONS: { value: WallCondition; label: string }[] = [
+  { value: 'wallUp',    label: 'Wall Above' },
+  { value: 'wallDown',  label: 'Wall Below' },
+  { value: 'wallLeft',  label: 'Wall Left' },
+  { value: 'wallRight', label: 'Wall Right' },
+]
+
+export class IfWallBlock extends BaseIfBlock {
   readonly id = 'if-wall';
-  readonly label = 'If';
+  readonly label = 'If Wall';
   readonly category = BlockCategory.CONTROL;
-  public condition: string = 'wallAhead';
-  public trueChildren: BaseBlock[] = [];
-  public elseChildren: BaseBlock[] = [];
+  public condition: WallCondition = 'wallUp';
 
-  execute(context: ExecutionContext): void {
-    if (context.shouldStopExecution()) {
-      return;
-    }
-
-    if (!this.evaluateCondition(context)) {
-      for (const child of this.elseChildren) {
-        if (context.shouldStopExecution()) {
-          break;
-        }
-
-        child.execute(context);
-      }
-      return;
-    }
-
-    for (const child of [...this.children, ...this.trueChildren]) {
-      if (context.shouldStopExecution()) {
-        break;
-      }
-
-      child.execute(context);
-    }
-  }
-
-  private evaluateCondition(context: ExecutionContext): boolean {
-    switch (this.condition.trim().toLowerCase()) {
-      case 'chestahead':
-        return context.isChestAhead();
-      case 'targetreached':
-        return context.isTargetReached();
-      case 'wallahead':
-      default:
-        return context.isWallAhead();
+  protected evaluateCondition(context: ExecutionContext): boolean {
+    switch (this.condition) {
+      case 'wallUp':    return context.isWallAt(0, -1);
+      case 'wallDown':  return context.isWallAt(0, 1);
+      case 'wallLeft':  return context.isWallAt(-1, 0);
+      case 'wallRight': return context.isWallAt(1, 0);
+      default:          return context.isWallAt(0, -1);
     }
   }
 }

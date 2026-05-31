@@ -34,9 +34,6 @@ export class GameEngine {
       isWallAt: (dx: number, dy: number) => this.isWallAt(this.state.playerX + dx, this.state.playerY + dy),
       isChestAt: (dx: number, dy: number) => this.state.hasChestAt(this.state.playerX + dx, this.state.playerY + dy),
       isTargetAt: (dx: number, dy: number) => this.isTargetAt(this.state.playerX + dx, this.state.playerY + dy),
-      // Keep "ahead" aligned to upward movement for compatibility.
-      isWallAhead: () => this.isWallAt(this.state.playerX, this.state.playerY - 1),
-      isChestAhead: () => this.state.hasChestAt(this.state.playerX, this.state.playerY - 1),
       isTargetReached: () => this.isLevelCompleted(),
       getRuntimeError: () => this.runtimeError,
       shouldStopExecution: () => this.runtimeError !== null || this.isLevelCompleted()
