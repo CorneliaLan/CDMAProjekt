@@ -23,6 +23,8 @@ export type ProgramNode = {
   repeatCount?: number
   children?: ProgramNode[]
   condition?: string
+  customDx?: number
+  customDy?: number
   trueChildren?: ProgramNode[]
   elseChildren?: ProgramNode[]
 }
@@ -116,6 +118,8 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
           if (node.condition) {
             block.condition = node.condition;
           }
+          if (node.customDx !== undefined) block.customDx = node.customDx;
+          if (node.customDy !== undefined) block.customDy = node.customDy;
           if (node.trueChildren) {
             const tc = buildBlocks(node.trueChildren);
             if (!tc) return null;

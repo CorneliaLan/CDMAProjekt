@@ -138,9 +138,13 @@ class FlowNode extends ClassicPreset.Node {
   blockKind: 'event' | 'action' | 'repeat' | 'if' | 'branch' = 'action'
   scopeRole?: 'repeat' | 'if-true' | 'if-else'
   repeatCount = 3
-  condition = 'wallAhead'
+  condition = 'wallUp'
+  customDx = 0
+  customDy = 0
   onRepeatCountChange?: (value: number) => void
   onConditionChange?: (value: string) => void
+  onCustomDxChange?: (value: number) => void
+  onCustomDyChange?: (value: number) => void
 }
 
 class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
@@ -254,7 +258,7 @@ const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { bl
 
 const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
   if (node?.blockKind === 'if') {
-    return { top: 92, left: 24, right: 24, bottom: 24 }
+    return { top: 150, left: 24, right: 24, bottom: 24 }
   }
 
   if (node?.blockKind === 'repeat') {
@@ -792,6 +796,8 @@ const deriveProgram = (): ProgramNode[] => {
 
         if (node.blockKind === 'if') {
           pNode.condition = node.condition
+          pNode.customDx = node.customDx ?? 0
+          pNode.customDy = node.customDy ?? 0
           const branchNodes = (nodes as FlowNode[]).filter(
             (n) => n.parent === node.id && n.blockKind === 'branch'
           )
@@ -884,8 +890,16 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.width = 540
     node.height = 360
     node.condition = payload.actionId === 'if-chest' ? 'chestUp' : 'wallUp'
+    node.customDx = 0
+    node.customDy = 0
     node.onConditionChange = (value: string) => {
       node.condition = value
+    }
+    node.onCustomDxChange = (value: number) => {
+      node.customDx = value
+    }
+    node.onCustomDyChange = (value: number) => {
+      node.customDy = value
     }
   }
 
@@ -1014,11 +1028,11 @@ const addIfBranches = async (node: FlowNode, x: number, y: number) => {
 
   await area.translate(trueBranch.id, {
     x: x + 30,
-    y: y + 104
+    y: y + 150
   })
   await area.translate(elseBranch.id, {
     x: x + 280,
-    y: y + 104
+    y: y + 150
   })
   await scopes.update(node.id)
 }

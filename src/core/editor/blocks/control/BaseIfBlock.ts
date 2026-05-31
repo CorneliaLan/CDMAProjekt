@@ -7,6 +7,8 @@ import { ExecutionContext } from '@/core/engine/ExecutionContext';
  */
 export abstract class BaseIfBlock extends BaseBlock {
   public condition: string = '';
+  public customDx: number = 0;
+  public customDy: number = 0;
   public trueChildren: BaseBlock[] = [];
   public elseChildren: BaseBlock[] = [];
 

@@ -47,6 +47,39 @@
       </option>
     </select>
 
+    <div
+      v-if="isIfWall && selectedCondition === 'custom'"
+      class="custom-offset"
+    >
+      <div class="offset-row">
+        <label class="offset-label">→</label>
+        <input
+          type="number"
+          class="offset-input"
+          v-model.number="customDx"
+          min="-10"
+          max="10"
+          @pointerdown.stop
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        />
+        <label class="offset-label">↓</label>
+        <input
+          type="number"
+          class="offset-input"
+          v-model.number="customDy"
+          min="-10"
+          max="10"
+          @pointerdown.stop
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        />
+      </div>
+      <p class="offset-hint">Use negative numbers to go left / up</p>
+    </div>
+
     <div class="content">
       <div class="inputs">
         <div
@@ -123,6 +156,8 @@ const isRepeat = computed(() => props.data.blockKind === 'repeat')
 const isIfWall = computed(() => props.data.blockKind === 'if')
 const selectedRepeatCount = ref(props.data.repeatCount ?? 3)
 const selectedCondition = ref(props.data.condition ?? 'wallUp')
+const customDx = ref<number>(props.data.customDx ?? 0)
+const customDy = ref<number>(props.data.customDy ?? 0)
 const conditionOptions = computed(() =>
   props.data.blockId === 'if-chest' ? CHEST_CONDITION_OPTIONS : WALL_CONDITION_OPTIONS
 )
@@ -140,6 +175,19 @@ watch(
     selectedCondition.value = props.data.condition ?? 'wallUp'
   }
 )
+
+// Reset only when switching to a different node
+watch(
+  () => props.data.id,
+  () => {
+    customDx.value = props.data.customDx ?? 0
+    customDy.value = props.data.customDy ?? 0
+  }
+)
+
+// Propagate typed value back to the node data
+watch(customDx, (val) => { props.data.customDx = val })
+watch(customDy, (val) => { props.data.customDy = val })
 
 const nodeStyle = computed(() => ({
   width: Number.isFinite(props.data.width) ? `${props.data.width}px` : undefined,
@@ -164,6 +212,7 @@ const onConditionChange = (event: Event) => {
   props.data.condition = value
   props.data.onConditionChange?.(value)
 }
+
 </script>
 
 <style scoped>
@@ -227,6 +276,47 @@ const onConditionChange = (event: Event) => {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.custom-offset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offset-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.offset-label {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.offset-input {
+  flex: 1;
+  height: 26px;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(69, 69, 215, 0.28);
+  border-radius: 6px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #27303e;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.offset-hint {
+  margin: 0;
+  font-size: 10px;
+  opacity: 0.65;
+  font-style: italic;
 }
 
 .content {
