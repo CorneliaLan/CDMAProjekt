@@ -12,7 +12,7 @@ import { BaseIfBlock } from '@/core/editor/blocks/control/BaseIfBlock';
 
 const registry = BlockRegistry.getInstance();
 
-type AvailableBlock = {
+export type AvailableBlock = {
   id: string
   label: string
   category: BlockCategory

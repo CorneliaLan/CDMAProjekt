@@ -115,8 +115,8 @@ import CustomNode from '@/components/CustomNode.vue'
 import { NodeEditor, ClassicPreset } from 'rete'
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin'
-import { VuePlugin, Presets, VueArea2D } from 'rete-vue-plugin'
-import { ScopesPlugin, Presets as ScopesPresets, type Scopes } from 'rete-scopes-plugin'
+import { VuePlugin, Presets } from 'rete-vue-plugin'
+import { ScopesPlugin, Presets as ScopesPresets } from 'rete-scopes-plugin'
 import {
   AutoArrangePlugin,
   Presets as ArrangePresets,
@@ -125,43 +125,16 @@ import {
 import Preview from '@/components/PreviewPanel.vue'
 
 import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
-
-class FlowNode extends ClassicPreset.Node {
-  width = 180
-  height = 120
-  parent?: string
-
-  blockId: string | null = null
-  nodeKind: 'start' | 'block' | 'end' = 'block'
-  category = 'default'
-  color = '#8799f6'
-  textColor = '#ffffff'
-  deletable = true
-  blockKind: 'event' | 'action' | 'repeat' | 'if' | 'branch' = 'action'
-  scopeRole?: 'repeat' | 'if-true' | 'if-else'
-  repeatCount = 3
-  condition = 'wallUp'
-  customDx = 0
-  customDy = 0
-  onRepeatCountChange?: (value: number) => void
-  onConditionChange?: (value: string) => void
-  onCustomDxChange?: (value: number) => void
-  onCustomDyChange?: (value: number) => void
-}
-
-class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
-
-type Schemes = ClassicPreset.GetSchemes<FlowNode, FlowConnection>
-
-type AreaExtra = VueArea2D<Schemes> | Scopes
-
-type BlueprintPayload = {
-  category: string
-  actionId: string
-  actionLabel: string
-  color: string
-  textColor: string
-}
+import { useEditorPersistence } from '@/composables/useEditorPersistence'
+import {
+  FlowNode,
+  FlowConnection,
+  isScopeNode,
+  type Schemes,
+  type AreaExtra,
+  type BlueprintPayload,
+  type ScopeBlockKind
+} from '@/types/FlowNodes'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,13 +159,27 @@ const reteContainer = ref<HTMLElement | null>(null)
 
 let editor: NodeEditor<Schemes> | null = null
 let area: AreaPlugin<Schemes, AreaExtra> | null = null
-let nodeIndex = 0
-let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 let scopes: ScopesPlugin<Schemes, AreaExtra> | null = null
+let nodeIndex = 0
+let lastNode: FlowNode | null = null
+
+const {
+  saveEditorState,
+  saveEditorStateDebounced,
+  tryLoadFromStorage,
+  flushAndSave
+} = useEditorPersistence(levelId, availableBlocks, {
+  editor: () => editor,
+  area: () => area,
+  scopes: () => scopes,
+  getLastNode: () => lastNode,
+  setLastNode: (node) => { lastNode = node },
+  getNodeIndex: () => nodeIndex,
+  setNodeIndex: (n) => { nodeIndex = n }
+})
 const scopeSizeCache = new Map<string, { width: number; height: number }>()
 
-type ScopeBlockKind = 'if' | 'repeat' | 'branch'
 type NodeSize = { width: number; height: number }
 type ScopePadding = { top: number; left: number; right: number; bottom: number }
 
@@ -253,10 +240,6 @@ const restoreRightPane = () => {
   isRightCollapsed.value = false
   leftWidth.value = 60
   window.dispatchEvent(new Event('resize'))
-}
-
-const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { blockKind: ScopeBlockKind } => {
-  return node?.blockKind === 'if' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
 }
 
 const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
@@ -536,6 +519,10 @@ const installScopePostUpdateGuards = () => {
       syncAllScopeSizes()
     }
 
+    if (context.type === 'nodedragged' || context.type === 'noderesized') {
+      saveEditorState()
+    }
+
     return context
   })
 }
@@ -659,7 +646,10 @@ onMounted(async () => {
     return context
   })
 
-  await createLevelStartNode()
+  const loaded = await tryLoadFromStorage()
+  if (!loaded) {
+    await createLevelStartNode()
+  }
 })
 
 const hasOutput = (node: FlowNode) => {
@@ -747,6 +737,7 @@ const deleteSelectedNode = async () => {
   deleteButtonPosition.value = null
 
   await arrangeNodes()
+  saveEditorState()
 }
 
 const arrangeNodes = async () => {
@@ -875,6 +866,7 @@ const runVisibleProgram = () => {
 }
 
 onBeforeUnmount(() => {
+  flushAndSave()
   reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
   scopeSizeCache.clear()
   area?.destroy()
@@ -908,6 +900,7 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.repeatCount = 3
     node.onRepeatCountChange = (value: number) => {
       node.repeatCount = value
+      saveEditorStateDebounced()
     }
   }
 
@@ -919,12 +912,15 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.customDy = 0
     node.onConditionChange = (value: string) => {
       node.condition = value
+      saveEditorStateDebounced()
     }
     node.onCustomDxChange = (value: number) => {
       node.customDx = value
+      saveEditorStateDebounced()
     }
     node.onCustomDyChange = (value: number) => {
       node.customDy = value
+      saveEditorStateDebounced()
     }
   }
 
@@ -1105,6 +1101,7 @@ const addReteNode = async (payload: BlueprintPayload) => {
   }
 
   closeRadialMenu()
+  saveEditorState()
 }
 
 // Preview expansion logic
