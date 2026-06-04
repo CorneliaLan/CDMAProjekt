@@ -762,7 +762,7 @@ const arrangeNodes = async () => {
     }
   })
 
-  await AreaExtensions.zoomAt(area, editor!.getNodes())
+  //await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
 const deriveProgram = (): ProgramNode[] => {
@@ -1111,9 +1111,9 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   if (targetScope) {
     await updateScopeChain(targetScope)
-    await AreaExtensions.zoomAt(area, editor.getNodes())
+    //await AreaExtensions.zoomAt(area, editor.getNodes())
   } else if (node.blockKind === 'if' || node.blockKind === 'repeat') {
-    await AreaExtensions.zoomAt(area, editor.getNodes())
+    //await AreaExtensions.zoomAt(area, editor.getNodes())
   } else {
     await arrangeNodes()
   }

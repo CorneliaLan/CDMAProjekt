@@ -12,17 +12,22 @@
     @keydown.enter.prevent="emitSelect"
     @keydown.space.prevent="emitSelect"
   >
-    <div class="diamond">
-      <div v-if="status === 'complete'" class="icon-circle">
-        <ion-icon name="checkmark"></ion-icon>
+    <div class="node-inner">
+
+      <div class="diamond">
+        <div v-if="status === 'complete'" class="icon-circle">
+          <ion-icon name="checkmark"></ion-icon>
+        </div>
+
+        <ion-icon v-if="status === 'active'" name="play"></ion-icon>
+        <ion-icon v-if="status === 'locked'" name="lock-closed"></ion-icon>
       </div>
-      <ion-icon v-if="status === 'active'" name="play"></ion-icon>
-      <ion-icon v-if="status === 'locked'" name="lock-closed"></ion-icon>
+
+      <span v-if="status === 'active'" class="label">ACTIVE</span>
+
+      <p class="title">{{ title }}</p>
+
     </div>
-
-    <span v-if="status === 'active'" class="label">ACTIVE</span>
-
-    <p>{{ title }}</p>
   </div>
 </template>
 
@@ -59,6 +64,7 @@ const emitSelect = () => {
 </script>
 
 <style scoped>
+/* OUTER NODE = POSITION ONLY */
 .node {
   position: absolute;
   width: 80px;
@@ -67,7 +73,7 @@ const emitSelect = () => {
   transform: translate(-50%, -50%);
 }
 
-.locked{
+.locked {
   cursor: not-allowed;
 }
 
@@ -76,21 +82,32 @@ const emitSelect = () => {
   cursor: pointer;
 }
 
+/* INNER LAYOUT WRAPPER */
+.node-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* DIAMOND */
 .diamond {
   width: 80px;
   height: 80px;
+
   transform: rotate(45deg);
+
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid v-bind('colors.primaryBorder');
 
+  border: 4px solid v-bind('colors.primaryBorder');
   background: v-bind('colors.background');
+
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 /* STATES */
-.complete .diamond { /* TODO: Farbe aktualisieren: e1e0ff */
+.complete .diamond {
   background: v-bind('colors.complete');
 }
 
@@ -107,7 +124,7 @@ const emitSelect = () => {
   color: v-bind('colors.textMuted');
 }
 
-/* DEFAULT (optional) */
+/* ICONS */
 .diamond ion-icon {
   transform: rotate(-45deg);
   font-size: 28px;
@@ -117,6 +134,7 @@ const emitSelect = () => {
   width: 36px;
   height: 36px;
   border-radius: 50%;
+
   background: v-bind('colors.primary');
 
   display: flex;
@@ -132,32 +150,36 @@ const emitSelect = () => {
   font-size: 28px;
 }
 
-/* STATES → ICON COLORS */
-
-/* complete */
-.complete .diamond ion-icon {
-  color: white;
-}
-
-/* active */
+/* ICON COLORS */
+.complete .diamond ion-icon,
 .active .diamond ion-icon {
   color: white;
 }
 
-/* locked */
 .locked .diamond ion-icon {
   color: v-bind('colors.textMuted');
 }
 
 /* LABEL */
 .label {
-  display: inline-block;
   margin-top: 30px;
-  margin-left: 12px;
   font-size: 10px;
+
   background: v-bind('colors.active');
   color: white;
+
   padding: 3px 8px;
   border-radius: 10px;
+
+  text-align: center;
 }
+
+/* TITLE */
+.title {
+  margin-top: 10px;
+  font-size: 14px;
+  color: v-bind('colors.text');
+  text-align: center;
+}
+
 </style>

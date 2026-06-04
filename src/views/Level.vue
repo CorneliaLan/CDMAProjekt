@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import {
@@ -71,12 +71,12 @@ import { colors } from '@/theme/colors'
 const router = useRouter()
 const route = useRoute()
 
-const { nodes } = Maps()
+const { nodes, recalcNodes } = Maps()
 
 const levelId = computed(() => String(route.params.id))
 
 const currentLevel = computed(() => {
-  return nodes.find(node => String(node.id) === levelId.value)
+  return nodes.value.find(node => String(node.id) === levelId.value)
 })
 
 const complexity = computed(() => currentLevel.value?.complexity ?? 1)
@@ -93,6 +93,10 @@ const startLevel = () => {
     }
   })
 }
+
+onMounted(() => {
+  recalcNodes()
+})
 </script>
 
 <style scoped>

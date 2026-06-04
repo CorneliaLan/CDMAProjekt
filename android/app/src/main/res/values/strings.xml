@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LearnQube</string>
+    <string name="title_activity_main">LearnQube</string>
+    <string name="package_name">com.cdma.learnqube</string>
+    <string name="custom_url_scheme">com.cdma.learnqube</string>
+</resources>
