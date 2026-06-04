@@ -78,7 +78,7 @@ import { addIcons } from 'ionicons'
 import { alertCircle, checkmarkCircle } from 'ionicons/icons'
 import LevelPreview from '@/components/LevelPreview.vue'
 import ControlBar from '@/components/ControlBar.vue'
-import type { GameState } from '@/core/engine/GameState'
+import type { GameStateView } from '@/core/engine/GameStateView'
 import type { ExecutionResult } from '@/core/engine/ExecutionResult'
 import type { LevelDefinition } from '@/core/levels/levelCatalog'
 
@@ -89,7 +89,7 @@ addIcons({
 
 const props = defineProps<{
   level: LevelDefinition | null
-  gameState: GameState | null
+  gameState: GameStateView | null
   executionResult?: ExecutionResult | null
 }>()
 
