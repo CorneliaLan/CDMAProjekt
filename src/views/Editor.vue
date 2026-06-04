@@ -177,7 +177,7 @@ const {
   gameState,
   executionResult,
   availableBlocks,
-  setProgramFromBlockIds,
+  setProgram,
   runProgram,
   resetProgram
 } = useEditorFacade(levelId)
@@ -847,9 +847,9 @@ const deriveProgram = (): ProgramNode[] => {
 }
 
 const runVisibleProgram = () => {
-  const blockIds = deriveProgramBlockIds()
+  const blockIds = deriveProgram()
 
-  if (!setProgramFromBlockIds(blockIds)) {
+  if (!setProgram(blockIds)) {
     return
   }
 

@@ -189,21 +189,37 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   const snapshots = ref<GameState[]>([])
 
   const runProgram = (): GameState[] | null => {
-    if (!level.value) return null
+    console.log('[runProgram] called')
+
+    if (!level.value) {
+      console.warn('[runProgram] aborted: level.value is null/undefined')
+      return null
+    }
+
+    console.log('[runProgram] level:', level.value)
+    console.log('[runProgram] programBlocks:', programBlocks.value)
 
     const newEngine = createEngine(level.value)
+    console.log('[runProgram] engine created')
+
     engine.value = newEngine
 
     const result = newEngine.run(programBlocks.value)
+    console.log('[runProgram] execution result:', result)
+
     executionResult.value = result
 
     const snaps = newEngine.getSnapshots()
+    console.log('[runProgram] snapshots:', snaps)
 
-    snapshots.value = snaps;
+    snapshots.value = snaps
 
-    gameState.value = snaps[0] ?? newEngine.getState();
+    gameState.value = snaps[0] ?? newEngine.getState()
+    console.log('[runProgram] initial gameState:', gameState.value)
 
-    return snaps;
+    console.log('[runProgram] finished')
+
+    return snaps
   }
 
   const resetProgram = () => {
