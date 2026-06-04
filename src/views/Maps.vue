@@ -8,41 +8,44 @@
                  :fullscreen="true"
                  :style="{ '--background': colors.background }">
 
-      <h1 class="title">World Map</h1>
+      <!--<h1 class="title">World Map</h1>-->
 
       <!-- MAP -->
       <div class="map-scroll">
         <div class="map-container">
 
           <!-- WORLD ORIGIN -->
-          <div class="world">
+           <div class="map-viewport" ref="viewport">
+            <div class="world" 
+                 :style="{ transform: `translate(-50%) scale(${scale})` }">
 
-            <!-- LINES -->
-            <svg class="lines" viewBox="0 0 800 800">
+              <!-- LINES -->
+              <svg class="lines">
 
-              <line
-                v-for="(conn, index) in connections"
-                :key="index"
-                :x1="getNode(conn[0]).x"
-                :y1="getNode(conn[0]).y"
-                :x2="getNode(conn[1]).x"
-                :y2="getNode(conn[1]).y"
+                <line
+                  v-for="(conn, index) in connections"
+                  :key="index"
+                  :x1="getNode(conn[0]).x"
+                  :y1="getNode(conn[0]).y"
+                  :x2="getNode(conn[1]).x"
+                  :y2="getNode(conn[1]).y"
+                />
+
+              </svg>
+
+              <!-- NODES COMPONENT -->
+              <MapNode
+                v-for="node in nodes"
+                :key="node.id"
+                :title="node.title"
+                :status="node.status"
+                :x="node.x"
+                :y="node.y"
+                @click="openLevel(node.id)"
               />
 
-            </svg>
-
-            <!-- NODES COMPONENT -->
-            <MapNode
-              v-for="node in nodes"
-              :key="node.id"
-              :title="node.title"
-              :status="node.status"
-              :x="node.x"
-              :y="node.y"
-              @click="openLevel(node.id)"
-            />
-
-          </div>
+            </div>
+           </div>
 
         </div>
       </div>
@@ -53,18 +56,17 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { IonContent, IonPage } from '@ionic/vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { IonContent, IonPage, onIonViewDidEnter } from '@ionic/vue'
 
 import Header from '@/components/Header.vue'
 import MapNode from '@/components/MapNode.vue'
 
 import { colors } from '@/theme/colors'
-
 import { Maps } from '@/composables/Maps'
 
 const { nodes, connections, getNode } = Maps()
 const router = useRouter()
-
 
 const openLevel = (id: number) => {
   const node = nodes.find(n => n.id === id)
@@ -80,6 +82,49 @@ const openLevel = (id: number) => {
     }
   })
 }
+
+const scale = ref(1)
+const viewport = ref<HTMLElement | null>(null)
+
+const updateScale = () => {
+  if (!viewport.value) return
+
+  const maxW = viewport.value.clientWidth
+  const maxH = viewport.value.clientHeight
+
+  if (maxW === 0 || maxH === 0) return
+
+  const worldSize = 800
+
+  scale.value = Math.min(
+    maxW / worldSize,
+    maxH / worldSize,
+    1
+  )
+}
+
+let observer: ResizeObserver | null = null
+
+onIonViewDidEnter(() => {
+  updateScale()
+
+  if (viewport.value) {
+    observer?.disconnect()
+
+    observer = new ResizeObserver(() => {
+      updateScale()
+    })
+
+    observer.observe(viewport.value)
+  }
+
+  window.addEventListener('resize', updateScale)
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', updateScale)
+})
 
 </script>
 
@@ -101,6 +146,16 @@ const openLevel = (id: number) => {
   overflow: visible;
 }
 
+.map-viewport {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 /* TITLE (bleibt fix oben sichtbar im Scrollbereich) */
 .title {
   position: sticky;
@@ -119,11 +174,8 @@ const openLevel = (id: number) => {
 /* WORLD CENTER */
 .world {
   position: absolute;
-  top: 35%;
+  top: 40%;
   left: 50%;
-
-  width: 800px;
-  height: 800px;
 }
 
 /* LINES */

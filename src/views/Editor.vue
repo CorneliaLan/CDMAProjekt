@@ -1095,6 +1095,7 @@ const closePreview = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 350px;
 }
 
 .rete-editor {

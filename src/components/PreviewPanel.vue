@@ -1,7 +1,10 @@
 <template>
   <div class="preview-panel">
-    <div class="preview-container">
-      <div class="preview-scale">
+    <div class="preview-container" ref="container">
+      <div
+        class="preview-scale"
+        :style="{ transform: `scale(${scale})` }"
+      >
         <div
             v-if="levelCompleted"
             class="execution-banner success-banner"
@@ -108,6 +111,42 @@ const completedSummary = computed(() => {
 
 const formatPosition = (position: { x: number, y: number }) => `x ${position.x}, y ${position.y}`
 const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${move.dy}`
+
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+
+const scale = ref(1)
+const container = ref<HTMLElement | null>(null)
+
+const updateScale = () => {
+  if (!container.value) return
+
+  const el = container.value
+
+  // wichtig: echte Content-Größe vs verfügbare Größe
+  const maxW = el.clientWidth
+  const maxH = el.clientHeight
+
+  const content = el.querySelector('.preview-scale') as HTMLElement
+  if (!content) return
+
+  const contentW = content.scrollWidth
+  const contentH = content.scrollHeight
+
+  const s = Math.min(maxW / contentW, maxH / contentH, 1)
+
+  scale.value = s
+}
+
+onMounted(async () => {
+  await nextTick()
+  updateScale()
+
+  window.addEventListener('resize', updateScale)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateScale)
+})
 </script>
 
 <style scoped>
@@ -140,9 +179,7 @@ const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${mo
 }
 
 .preview-scale {
-  width: 100%;
-  height: 100%;
-
+  transform-origin: center;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -163,11 +200,16 @@ const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${mo
 
 .control-wrapper {
   flex-shrink: 0;
+  width: 100%;
 
   display: flex;
   justify-content: center;
 
   padding: 16px;
+}
+
+:deep(.control-bar) {
+  min-width: 260px;
 }
 
 .execution-banner {
