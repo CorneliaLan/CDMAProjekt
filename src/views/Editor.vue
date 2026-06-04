@@ -124,7 +124,7 @@ import {
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
 
-import { useEditorFacade } from '@/composables/useEditorFacade'
+import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
 
 class FlowNode extends ClassicPreset.Node {
   width = 180
@@ -137,12 +137,16 @@ class FlowNode extends ClassicPreset.Node {
   color = '#8799f6'
   textColor = '#ffffff'
   deletable = true
-  blockKind: 'event' | 'action' | 'repeat' | 'ifwall' | 'branch' = 'action'
+  blockKind: 'event' | 'action' | 'repeat' | 'if' | 'branch' = 'action'
   scopeRole?: 'repeat' | 'if-true' | 'if-else'
   repeatCount = 3
-  condition = 'wallAhead'
+  condition = 'wallUp'
+  customDx = 0
+  customDy = 0
   onRepeatCountChange?: (value: number) => void
   onConditionChange?: (value: string) => void
+  onCustomDxChange?: (value: number) => void
+  onCustomDyChange?: (value: number) => void
 }
 
 class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
@@ -188,12 +192,12 @@ let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 let scopes: ScopesPlugin<Schemes, AreaExtra> | null = null
 const scopeSizeCache = new Map<string, { width: number; height: number }>()
 
-type ScopeBlockKind = 'ifwall' | 'repeat' | 'branch'
+type ScopeBlockKind = 'if' | 'repeat' | 'branch'
 type NodeSize = { width: number; height: number }
 type ScopePadding = { top: number; left: number; right: number; bottom: number }
 
 const scopeMinSizes: Record<ScopeBlockKind, NodeSize> = {
-  ifwall: { width: 540, height: 360 },
+  if: { width: 540, height: 360 },
   repeat: { width: 260, height: 190 },
   branch: { width: 240, height: 150 }
 }
@@ -252,12 +256,12 @@ const restoreRightPane = () => {
 }
 
 const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { blockKind: ScopeBlockKind } => {
-  return node?.blockKind === 'ifwall' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
+  return node?.blockKind === 'if' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
 }
 
 const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
-  if (node?.blockKind === 'ifwall') {
-    return { top: 92, left: 24, right: 24, bottom: 24 }
+  if (node?.blockKind === 'if') {
+    return { top: 150, left: 24, right: 24, bottom: 24 }
   }
 
   if (node?.blockKind === 'repeat') {
@@ -766,7 +770,7 @@ const arrangeNodes = async () => {
   await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
-const deriveProgramBlockIds = (): string[] => {
+const deriveProgram = (): ProgramNode[] => {
   if (!editor) return []
 
   const nodes = editor.getNodes() as FlowNode[]
@@ -776,31 +780,70 @@ const deriveProgramBlockIds = (): string[] => {
 
   if (!startNode) return []
 
-  const blockIds: string[] = []
-  const visitedNodeIds = new Set<string>([startNode.id])
-  let currentNode = startNode
+  const walkChain = (firstNodeId: string, scopeIds: Set<string>): ProgramNode[] => {
+    const result: ProgramNode[] = []
+    const visited = new Set<string>()
+    let currentId: string | undefined = firstNodeId
 
-  while (true) {
-    const nextConnection = connections.find((connection) => connection.source === currentNode.id)
-    if (!nextConnection) break
+    while (currentId && !visited.has(currentId) && scopeIds.has(currentId)) {
+      const node = nodesById.get(currentId)!
+      visited.add(currentId)
 
-    const nextNode = nodesById.get(nextConnection.target)
-    if (!nextNode || visitedNodeIds.has(nextNode.id)) break
+      if (node.nodeKind !== 'end' && node.blockId) {
+        const pNode: ProgramNode = { blockId: node.blockId }
 
-    visitedNodeIds.add(nextNode.id)
+        if (node.blockKind === 'repeat') {
+          pNode.repeatCount = node.repeatCount
+          pNode.children = collectRepeatChildren(node.id)
+        }
 
-    if (nextNode.nodeKind === 'end') {
-      break
+        if (node.blockKind === 'if') {
+          pNode.condition = node.condition
+          pNode.customDx = node.customDx ?? 0
+          pNode.customDy = node.customDy ?? 0
+          const branchNodes = (nodes as FlowNode[]).filter(
+            (n) => n.parent === node.id && n.blockKind === 'branch'
+          )
+          const trueBranch = branchNodes.find((n) => n.scopeRole === 'if-true')
+          const elseBranch = branchNodes.find((n) => n.scopeRole === 'if-else')
+          if (trueBranch) pNode.trueChildren = collectBranchChildren(trueBranch.id)
+          if (elseBranch) pNode.elseChildren = collectBranchChildren(elseBranch.id)
+        }
+
+        result.push(pNode)
+      }
+
+      const nextConn = connections.find((c) => c.source === currentId && scopeIds.has(c.target))
+      currentId = nextConn?.target
     }
 
-    if (nextNode.blockId) {
-      blockIds.push(nextNode.blockId)
-    }
-
-    currentNode = nextNode
+    return result
   }
 
-  return blockIds
+  const collectRepeatChildren = (repeatNodeId: string): ProgramNode[] => {
+    return collectScopedChildren(repeatNodeId)
+  }
+
+  const collectBranchChildren = (branchNodeId: string): ProgramNode[] => {
+    return collectScopedChildren(branchNodeId)
+  }
+
+  const collectScopedChildren = (parentNodeId: string): ProgramNode[] => {
+    const children = (nodes as FlowNode[]).filter(
+      (n) => n.parent === parentNodeId && n.blockKind !== 'branch'
+    )
+    const childIds = new Set(children.map((n) => n.id))
+    const first = children.find(
+      (n) => !connections.some((c) => c.target === n.id && childIds.has(c.source))
+    )
+    if (!first) return []
+    return walkChain(first.id, childIds)
+  }
+
+  const topLevelIds = new Set(nodes.filter((n) => !n.parent).map((n) => n.id))
+  const firstId = connections.find((c) => c.source === startNode.id)?.target
+  if (!firstId) return []
+  return walkChain(firstId, topLevelIds)
 }
 
 const runVisibleProgram = () => {
@@ -842,7 +885,7 @@ onBeforeUnmount(() => {
 
 const getBlockKind = (blockId: string): FlowNode['blockKind'] => {
   if (blockId === 'repeat-x') return 'repeat'
-  if (blockId === 'if-wall') return 'ifwall'
+  if (blockId === 'if-wall' || blockId === 'if-chest') return 'if'
   return 'action'
 }
 
@@ -868,12 +911,20 @@ const createFlowNode = (payload: BlueprintPayload) => {
     }
   }
 
-  if (node.blockKind === 'ifwall') {
+  if (node.blockKind === 'if') {
     node.width = 540
     node.height = 360
-    node.condition = 'wallAhead'
+    node.condition = payload.actionId === 'if-chest' ? 'chestUp' : 'wallUp'
+    node.customDx = 0
+    node.customDy = 0
     node.onConditionChange = (value: string) => {
       node.condition = value
+    }
+    node.onCustomDxChange = (value: number) => {
+      node.customDx = value
+    }
+    node.onCustomDyChange = (value: number) => {
+      node.customDy = value
     }
   }
 
@@ -991,7 +1042,7 @@ const connectAfterScopedNode = async (node: FlowNode, previousNode: FlowNode | n
   await editor.addConnection(connection)
 }
 
-const addIfWallBranches = async (node: FlowNode, x: number, y: number) => {
+const addIfBranches = async (node: FlowNode, x: number, y: number) => {
   if (!editor || !area || !scopes) return
 
   const trueBranch = createBranchScopeNode('True Branch', 'if-true', node)
@@ -1002,11 +1053,11 @@ const addIfWallBranches = async (node: FlowNode, x: number, y: number) => {
 
   await area.translate(trueBranch.id, {
     x: x + 30,
-    y: y + 104
+    y: y + 150
   })
   await area.translate(elseBranch.id, {
     x: x + 280,
-    y: y + 104
+    y: y + 150
   })
   await scopes.update(node.id)
 }
@@ -1035,8 +1086,8 @@ const addReteNode = async (payload: BlueprintPayload) => {
     await connectAfterLastNode(node)
   }
 
-  if (node.blockKind === 'ifwall') {
-    await addIfWallBranches(node, x, y)
+  if (node.blockKind === 'if') {
+    await addIfBranches(node, x, y)
   }
 
   if (!targetScope) {
@@ -1047,7 +1098,7 @@ const addReteNode = async (payload: BlueprintPayload) => {
   if (targetScope) {
     await updateScopeChain(targetScope)
     await AreaExtensions.zoomAt(area, editor.getNodes())
-  } else if (node.blockKind === 'ifwall' || node.blockKind === 'repeat') {
+  } else if (node.blockKind === 'if' || node.blockKind === 'repeat') {
     await AreaExtensions.zoomAt(area, editor.getNodes())
   } else {
     await arrangeNodes()

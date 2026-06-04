@@ -28,17 +28,57 @@
       </select>
     </div>
 
-    <input
+    <select
       v-if="isIfWall"
-      class="condition-input"
-      :value="condition"
-      placeholder="wallAhead"
-      @input="onConditionInput"
+      class="condition-select"
+      :value="selectedCondition"
+      @change="onConditionChange"
       @pointerdown.stop
       @mousedown.stop
       @click.stop
       @dblclick.stop
-    />
+    >
+      <option
+        v-for="opt in conditionOptions"
+        :key="opt.value"
+        :value="opt.value"
+      >
+        {{ opt.label }}
+      </option>
+    </select>
+
+    <div
+      v-if="isIfWall && selectedCondition === 'custom'"
+      class="custom-offset"
+    >
+      <div class="offset-row">
+        <label class="offset-label">→</label>
+        <input
+          type="number"
+          class="offset-input"
+          v-model.number="customDx"
+          min="-10"
+          max="10"
+          @pointerdown.stop
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        />
+        <label class="offset-label">↓</label>
+        <input
+          type="number"
+          class="offset-input"
+          v-model.number="customDy"
+          min="-10"
+          max="10"
+          @pointerdown.stop
+          @mousedown.stop
+          @click.stop
+          @dblclick.stop
+        />
+      </div>
+      <p class="offset-hint">Use negative numbers to go left / up</p>
+    </div>
 
     <div class="content">
       <div class="inputs">
@@ -87,6 +127,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { Ref } from 'rete-vue-plugin'
+import { WALL_CONDITION_OPTIONS } from '@/core/editor/blocks/control/IfWallBlock'
+import { CHEST_CONDITION_OPTIONS } from '@/core/editor/blocks/control/IfChestBlock'
 
 type IndexedEntry<T> = [string, T & { index?: number }]
 
@@ -111,9 +153,14 @@ const sortedOutputs = computed(() => {
 })
 
 const isRepeat = computed(() => props.data.blockKind === 'repeat')
-const isIfWall = computed(() => props.data.blockKind === 'ifwall')
+const isIfWall = computed(() => props.data.blockKind === 'if')
 const selectedRepeatCount = ref(props.data.repeatCount ?? 3)
-const condition = computed(() => props.data.condition ?? 'wallAhead')
+const selectedCondition = ref(props.data.condition ?? 'wallUp')
+const customDx = ref<number>(props.data.customDx ?? 0)
+const customDy = ref<number>(props.data.customDy ?? 0)
+const conditionOptions = computed(() =>
+  props.data.blockId === 'if-chest' ? CHEST_CONDITION_OPTIONS : WALL_CONDITION_OPTIONS
+)
 
 watch(
   () => [props.data.id, props.data.repeatCount],
@@ -121,6 +168,26 @@ watch(
     selectedRepeatCount.value = props.data.repeatCount ?? 3
   }
 )
+
+watch(
+  () => [props.data.id, props.data.condition],
+  () => {
+    selectedCondition.value = props.data.condition ?? 'wallUp'
+  }
+)
+
+// Reset only when switching to a different node
+watch(
+  () => props.data.id,
+  () => {
+    customDx.value = props.data.customDx ?? 0
+    customDy.value = props.data.customDy ?? 0
+  }
+)
+
+// Propagate typed value back to the node data
+watch(customDx, (val) => { props.data.customDx = val })
+watch(customDy, (val) => { props.data.customDy = val })
 
 const nodeStyle = computed(() => ({
   width: Number.isFinite(props.data.width) ? `${props.data.width}px` : undefined,
@@ -138,12 +205,14 @@ const onRepeatChange = (event: Event) => {
   props.data.onRepeatCountChange?.(repeatCount)
 }
 
-const onConditionInput = (event: Event) => {
-  const condition = (event.target as HTMLInputElement).value
+const onConditionChange = (event: Event) => {
+  const value = (event.target as HTMLSelectElement).value
 
-  props.data.condition = condition
-  props.data.onConditionChange?.(condition)
+  selectedCondition.value = value
+  props.data.condition = value
+  props.data.onConditionChange?.(value)
 }
+
 </script>
 
 <style scoped>
@@ -195,16 +264,59 @@ const onConditionInput = (event: Event) => {
   font-weight: 700;
 }
 
-.condition-input {
+.condition-select {
   width: 100%;
   height: 28px;
   box-sizing: border-box;
   border: 1px solid rgba(69, 69, 215, 0.28);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 0 6px;
   background: rgba(255, 255, 255, 0.92);
   color: #27303e;
   font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.custom-offset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.offset-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.offset-label {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.offset-input {
+  flex: 1;
+  height: 26px;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1px solid rgba(69, 69, 215, 0.28);
+  border-radius: 6px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #27303e;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.offset-hint {
+  margin: 0;
+  font-size: 10px;
+  opacity: 0.65;
+  font-style: italic;
 }
 
 .content {
@@ -262,7 +374,7 @@ const onConditionInput = (event: Event) => {
 }
 
 .custom-node.repeat,
-.custom-node.ifwall,
+.custom-node.if,
 .custom-node.branch {
   background-image: linear-gradient(
     135deg,
