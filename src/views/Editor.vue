@@ -17,6 +17,9 @@
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
           </button>
+          <button class="floating-clear" @click.stop="clearEditor">
+            <ion-icon :icon="trashOutline" />
+          </button>
 
           <div
             v-if="isRadialMenuOpen"
@@ -104,7 +107,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
-import { addOutline } from 'ionicons/icons'
+import { addOutline, trashOutline } from 'ionicons/icons'
 
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
@@ -168,7 +171,8 @@ const {
   saveEditorState,
   saveEditorStateDebounced,
   tryLoadFromStorage,
-  flushAndSave
+  flushAndSave,
+  clearStorage
 } = useEditorPersistence(levelId, availableBlocks, {
   editor: () => editor,
   area: () => area,
@@ -837,6 +841,20 @@ const deriveProgram = (): ProgramNode[] => {
   return walkChain(firstId, topLevelIds)
 }
 
+const clearEditor = async () => {
+  if (!editor || !area) return
+  if (!window.confirm('Clear the entire program? This cannot be undone.')) return
+
+  await editor.clear()
+  scopeSizeCache.clear()
+  selectedNode = null
+  deleteButtonPosition.value = null
+  lastNode = null
+  nodeIndex = 0
+  clearStorage()
+  await createLevelStartNode()
+}
+
 const runVisibleProgram = () => {
   const blockIds = deriveProgram()
 
@@ -1151,6 +1169,34 @@ const closePreview = () => {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.floating-clear {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  z-index: 30;
+
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #e53935;
+  color: #ffffff;
+  font-size: 24px;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.floating-clear:hover {
+  transform: translateY(-2px);
 }
 
 .floating-plus {

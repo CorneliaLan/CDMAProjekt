@@ -271,6 +271,10 @@ export function useEditorPersistence(
     return true
   }
 
+  const clearStorage = () => {
+    localStorage.removeItem(storageKey())
+  }
+
   const flushAndSave = () => {
     if (_debounceTimer !== null) {
       clearTimeout(_debounceTimer)
@@ -295,6 +299,7 @@ export function useEditorPersistence(
     saveEditorStateDebounced,
     loadEditorState,
     tryLoadFromStorage,
-    flushAndSave
+    flushAndSave,
+    clearStorage
   }
 }
