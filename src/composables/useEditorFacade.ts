@@ -9,6 +9,9 @@ import { getLevelById, type LevelDefinition } from '@/core/levels/levelCatalog';
 import { registerBlocksByIds } from '@/core/setup/registerDefaultBlocks';
 import { RepeatBlock } from '@/core/editor/blocks/repeat/RepeatBlock';
 import { BaseIfBlock } from '@/core/editor/blocks/control/BaseIfBlock';
+import type { GameStateView } from '@/core/engine/GameStateView'
+import { mapGameState } from '@/core/engine/mapGameState';
+
 
 const registry = BlockRegistry.getInstance();
 
@@ -35,7 +38,7 @@ function createEngine(level: LevelDefinition): GameEngine {
 
 export function useEditorFacade(levelId: MaybeRef<number>) {
   const engine = shallowRef<GameEngine | null>(null);
-  const gameState = ref<GameState | null>(null);
+  const gameState = ref<GameStateView  | null>(null);
   const executionResult = ref<ExecutionResult | null>(null);
   const availableBlocks = ref<AvailableBlock[]>([]);
   //const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
@@ -189,35 +192,25 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   const snapshots = ref<GameState[]>([])
 
   const runProgram = (): GameState[] | null => {
-    console.log('[runProgram] called')
-
     if (!level.value) {
-      console.warn('[runProgram] aborted: level.value is null/undefined')
       return null
     }
 
-    console.log('[runProgram] level:', level.value)
-    console.log('[runProgram] programBlocks:', programBlocks.value)
-
     const newEngine = createEngine(level.value)
-    console.log('[runProgram] engine created')
 
     engine.value = newEngine
 
     const result = newEngine.run(programBlocks.value)
-    console.log('[runProgram] execution result:', result)
 
     executionResult.value = result
 
     const snaps = newEngine.getSnapshots()
-    console.log('[runProgram] snapshots:', snaps)
 
     snapshots.value = snaps
 
-    gameState.value = snaps[0] ?? newEngine.getState()
-    console.log('[runProgram] initial gameState:', gameState.value)
-
-    console.log('[runProgram] finished')
+    gameState.value = snaps[0]
+      ? mapGameState(snaps[0])
+      : mapGameState(newEngine.getState())
 
     return snaps
   }
@@ -238,7 +231,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     gameState.value = null
 
     queueMicrotask(() => {
-      gameState.value = initial.clone()
+      gameState.value = mapGameState(initial.clone())
     })
   }
 

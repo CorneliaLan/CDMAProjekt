@@ -61,13 +61,15 @@ import type { BlockCategory } from '@/core/editor/BlockCategories'
 
 const activeItem = ref<string | null>(null)
 
-const props = defineProps<{
-  availableBlocks: {
+const props = withDefaults(defineProps<{
+  availableBlocks?: {
     id: string
     label: string
     category: BlockCategory
   }[]
-}>()
+}>(), {
+  availableBlocks: () => []
+})
 
 const emit = defineEmits<{
   select: [payload: {
@@ -75,7 +77,7 @@ const emit = defineEmits<{
     actionId: string
     actionLabel: string
     color: string
-    textColor?: string
+    textColor: string
   }]
 }>()
 
@@ -111,8 +113,7 @@ const categoryMeta = {
 }
 
 const items = computed(() => {
-const grouped = new Map<string, { id: string; label: string }[]>()
-//Map<string, string[]>()
+  const grouped = new Map<string, { id: string; label: string }[]>()
 
   for (const block of props.availableBlocks) {
     const category = String(block.category)
@@ -128,7 +129,7 @@ const grouped = new Map<string, { id: string; label: string }[]>()
     .map(([category, actions]) => {
       const meta = categoryMeta[category as keyof typeof categoryMeta]
 
-      if (!meta) return null
+      if (!meta) return undefined
 
       return {
         ...meta,
@@ -136,7 +137,7 @@ const grouped = new Map<string, { id: string; label: string }[]>()
         actions
       }
     })
-    .filter(Boolean)
+    .filter((item): item is NonNullable<typeof item> => item !== undefined)
 })
 
 const onHover = (item: any) => {

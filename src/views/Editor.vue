@@ -762,8 +762,8 @@ const arrangeNodes = async () => {
     options: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': 80,
-      'elk.layered.spacing.nodeNodeBetweenLayers': 120
+      'elk.spacing.nodeNode': '80',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '120'
     }
   })
 
