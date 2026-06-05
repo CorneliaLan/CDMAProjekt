@@ -200,16 +200,11 @@ onBeforeUnmount(() => {
 
 .control-wrapper {
   flex-shrink: 0;
-  width: 100%;
 
   display: flex;
   justify-content: center;
 
   padding: 16px;
-}
-
-:deep(.control-bar) {
-  min-width: 260px;
 }
 
 .execution-banner {
@@ -273,9 +268,28 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 767px) {
   .error-details {
     grid-template-columns: 1fr;
+  }
+
+  .preview-panel {
+    flex-direction: row;
+    align-items: stretch;
+  }
+  
+  .preview-container {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .control-wrapper {
+    flex-shrink: 0;
+    padding: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>

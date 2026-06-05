@@ -12,7 +12,8 @@
           :style="{ flexBasis: isRightCollapsed ? '100%' : `${leftWidth}%` }"
         >
           <button class="back-button" @click="goToMap">
-            ← Back
+            <ion-icon :icon="arrowBackOutline" />
+            <span>Back</span>
           </button>
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
@@ -48,7 +49,7 @@
      <div
           v-if="!isRightCollapsed"
           class="pane-resizer"
-          @mousedown="startResize"
+          @pointerdown="startResize"
         >
           <button class="collapse-button" @click.stop="collapseRightPane">
             ›
@@ -67,11 +68,12 @@
               @play="runVisibleProgram"
               @reset="resetProgram"
           />
+        </section>
 
           <button class="expand-preview-button" @click="expandPreview">
-            [ ]
+            <ion-icon :icon="eyeOutline" />
+            Preview
           </button>
-        </section>
         <div
           v-if="isRightCollapsed"
           class="pane-resizer collapsed-resizer"
@@ -107,7 +109,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
-import { addOutline, trashOutline } from 'ionicons/icons'
+import { addOutline, trashOutline, eyeOutline, arrowBackOutline } from 'ionicons/icons'
 
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
@@ -211,11 +213,11 @@ const isRightCollapsed = ref(false)
 const startResize = () => {
   isResizing.value = true
 
-  window.addEventListener('mousemove', resizePanes)
-  window.addEventListener('mouseup', stopResize)
+  window.addEventListener('pointermove', resizePanes)
+  window.addEventListener('pointerup', stopResize)
 }
 
-const resizePanes = (event: MouseEvent) => {
+const resizePanes = (event: PointerEvent) => {
   if (!isResizing.value) return
 
   const minLeft = 30
@@ -229,8 +231,8 @@ const resizePanes = (event: MouseEvent) => {
 const stopResize = () => {
   isResizing.value = false
 
-  window.removeEventListener('mousemove', resizePanes)
-  window.removeEventListener('mouseup', stopResize)
+  window.removeEventListener('pointermove', resizePanes)
+  window.removeEventListener('pointerup', stopResize)
 
   window.dispatchEvent(new Event('resize'))
 }
@@ -1227,13 +1229,12 @@ const closePreview = () => {
   z-index: 25;
 
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
 
   padding: 24px 24px 96px 24px;
 
-  background: rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(2px);
+  padding: 0;
 }
 
 .node-delete-button {
@@ -1269,19 +1270,19 @@ const closePreview = () => {
 
 .expand-preview-button {
   position: absolute;
-  top: 28px;
+  top: 84px;
   right: 24px;
   z-index: 10;
 
   border: none;
   border-radius: 12px;
-  width: 44px;
   height: 44px;
+  padding: 8px 10px;
 
   background: v-bind('colors.primary');
   color: white;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .preview-fullscreen {
@@ -1325,19 +1326,27 @@ const closePreview = () => {
 
   border: none;
   border-radius: 12px;
-
-  padding: 10px 16px;
+  height: 44px;
+  padding: 8px 10px;
 
   background: v-bind('colors.primary');
   color: white;
 
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
 
   cursor: pointer;
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: 0.2s;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-arrow {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .back-button:hover {
@@ -1354,6 +1363,7 @@ const closePreview = () => {
   cursor: col-resize;
   background: #dcdcdc;
   z-index: 50;
+  touch-action: none;
 }
 
 .pane-resizer:hover {
@@ -1414,7 +1424,14 @@ const closePreview = () => {
   .right-pane {
     flex-basis: 40%;
   }
+
+  .radial-menu-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
 }
+
 @media (max-width: 768px) {
   .pane-resizer,
   .right-pane {
@@ -1423,6 +1440,12 @@ const closePreview = () => {
 
   .left-pane {
     flex-basis: 100% !important;
+  }
+
+  .radial-menu-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
   }
 }
 </style>
