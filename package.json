@@ -12,8 +12,10 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/screen-orientation": "^8.0.1",
     "@ionic/vue": "^8.8.5",
     "@ionic/vue-router": "^8.8.5",
     "elkjs": "^0.8.2",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@vitejs/plugin-legacy": "^8.0.1",
     "@vitejs/plugin-vue": "^6.0.6",
-    "vite": "8.0.10"
+    "vite": "8.0.10",
+    "vue-tsc": "^3.3.3"
   }
 }

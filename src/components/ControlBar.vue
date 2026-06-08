@@ -14,7 +14,7 @@
 
       <div class="divider"></div>
 
-      <ion-icon name="refresh" @click="emit('reset')"></ion-icon>
+      <ion-icon name="refresh" @click="emit('reset')" ></ion-icon>
     </div>
 
   </div>
@@ -49,7 +49,6 @@ const emit = defineEmits<{
 
 <style scoped>
 .control-bar {
-  display: flex;
   align-items: center;
   gap: 20px;
 
@@ -59,6 +58,9 @@ const emit = defineEmits<{
   background: v-bind('colors.primaryLight');
 
   box-shadow: 0 8px 20px v-bind('colors.textMuted');
+  
+  display: flex;
+  width: max-content;
 }
 
 /* PLAY BUTTON */
@@ -105,5 +107,39 @@ const emit = defineEmits<{
   width: 1px;
   height: 24px;
   background: v-bind('colors.line');
+}
+
+/* Phone */
+@media (max-width: 767px) {
+  .control-bar {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    
+    height: max-content;
+  }
+
+  .play-btn {
+  width: 48px;
+  height: 48px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .actions ion-icon {
+    font-size: 20px;
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+  }
 }
 </style>

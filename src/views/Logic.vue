@@ -27,7 +27,7 @@
               class="blueprint-card"
               :style="{ backgroundColor: blueprint.color, color: blueprint.textColor }"
             >
-              {{ blueprint.action }}
+              {{ blueprint.actionLabel }}
             </div>
           </div>
           <button class="floating-plus" @click.stop="openRadialMenu">
@@ -64,7 +64,8 @@ import { colors } from '@/theme/colors'
 type Blueprint = {
   id: number
   category: string
-  action: string
+  actionId: string
+  actionLabel: string
   color: string
   textColor: string
 }

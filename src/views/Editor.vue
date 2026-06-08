@@ -12,10 +12,14 @@
           :style="{ flexBasis: isRightCollapsed ? '100%' : `${leftWidth}%` }"
         >
           <button class="back-button" @click="goToMap">
-            ← Back
+            <ion-icon :icon="arrowBackOutline" />
+            <span>Back</span>
           </button>
           <button class="floating-plus" @click.stop="openRadialMenu">
             <ion-icon :icon="addOutline" />
+          </button>
+          <button class="floating-clear" @click.stop="clearEditor">
+            <ion-icon :icon="trashOutline" />
           </button>
 
           <div
@@ -45,7 +49,7 @@
      <div
           v-if="!isRightCollapsed"
           class="pane-resizer"
-          @mousedown="startResize"
+          @pointerdown="startResize"
         >
           <button class="collapse-button" @click.stop="collapseRightPane">
             ›
@@ -62,13 +66,14 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
-              @reset="resetGame"
+              @reset="resetProgram"
           />
+        </section>
 
           <button class="expand-preview-button" @click="expandPreview">
-            [ ]
+            <ion-icon :icon="eyeOutline" />
+            Preview
           </button>
-        </section>
         <div
           v-if="isRightCollapsed"
           class="pane-resizer collapsed-resizer"
@@ -91,7 +96,7 @@
               :game-state="gameState"
               :execution-result="executionResult"
               @play="runVisibleProgram"
-              @reset="resetGame"
+              @reset="resetProgram"
           />
         </div>
       </div>
@@ -104,7 +109,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
-import { addOutline } from 'ionicons/icons'
+import { addOutline, trashOutline, eyeOutline, arrowBackOutline } from 'ionicons/icons'
 
 import Header from '@/components/Header.vue'
 import RadialMenu from '@/components/RadialMenu.vue'
@@ -115,8 +120,8 @@ import CustomNode from '@/components/CustomNode.vue'
 import { NodeEditor, ClassicPreset } from 'rete'
 import { AreaPlugin, AreaExtensions } from 'rete-area-plugin'
 import { ConnectionPlugin, Presets as ConnectionPresets } from 'rete-connection-plugin'
-import { VuePlugin, Presets, VueArea2D } from 'rete-vue-plugin'
-import { ScopesPlugin, Presets as ScopesPresets, type Scopes } from 'rete-scopes-plugin'
+import { VuePlugin, Presets } from 'rete-vue-plugin'
+import { ScopesPlugin, Presets as ScopesPresets } from 'rete-scopes-plugin'
 import {
   AutoArrangePlugin,
   Presets as ArrangePresets,
@@ -125,43 +130,16 @@ import {
 import Preview from '@/components/PreviewPanel.vue'
 
 import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
-
-class FlowNode extends ClassicPreset.Node {
-  width = 180
-  height = 120
-  parent?: string
-
-  blockId: string | null = null
-  nodeKind: 'start' | 'block' | 'end' = 'block'
-  category = 'default'
-  color = '#8799f6'
-  textColor = '#ffffff'
-  deletable = true
-  blockKind: 'event' | 'action' | 'repeat' | 'if' | 'branch' = 'action'
-  scopeRole?: 'repeat' | 'if-true' | 'if-else'
-  repeatCount = 3
-  condition = 'wallUp'
-  customDx = 0
-  customDy = 0
-  onRepeatCountChange?: (value: number) => void
-  onConditionChange?: (value: string) => void
-  onCustomDxChange?: (value: number) => void
-  onCustomDyChange?: (value: number) => void
-}
-
-class FlowConnection extends ClassicPreset.Connection<FlowNode, FlowNode> {}
-
-type Schemes = ClassicPreset.GetSchemes<FlowNode, FlowConnection>
-
-type AreaExtra = VueArea2D<Schemes> | Scopes
-
-type BlueprintPayload = {
-  category: string
-  actionId: string
-  actionLabel: string
-  color: string
-  textColor: string
-}
+import { useEditorPersistence } from '@/composables/useEditorPersistence'
+import {
+  FlowNode,
+  FlowConnection,
+  isScopeNode,
+  type Schemes,
+  type AreaExtra,
+  type BlueprintPayload,
+  type ScopeBlockKind
+} from '@/types/FlowNodes'
 
 const route = useRoute()
 const router = useRouter()
@@ -178,21 +156,36 @@ const {
   executionResult,
   availableBlocks,
   setProgram,
-  resetGame,
-  runProgram
+  runProgram,
+  resetProgram
 } = useEditorFacade(levelId)
 
 const reteContainer = ref<HTMLElement | null>(null)
 
 let editor: NodeEditor<Schemes> | null = null
 let area: AreaPlugin<Schemes, AreaExtra> | null = null
-let nodeIndex = 0
-let lastNode: FlowNode | null = null
 let arrange: AutoArrangePlugin<Schemes, AreaExtra> | null = null
 let scopes: ScopesPlugin<Schemes, AreaExtra> | null = null
+let nodeIndex = 0
+let lastNode: FlowNode | null = null
+
+const {
+  saveEditorState,
+  saveEditorStateDebounced,
+  tryLoadFromStorage,
+  flushAndSave,
+  clearStorage
+} = useEditorPersistence(levelId, availableBlocks, {
+  editor: () => editor,
+  area: () => area,
+  scopes: () => scopes,
+  getLastNode: () => lastNode,
+  setLastNode: (node) => { lastNode = node },
+  getNodeIndex: () => nodeIndex,
+  setNodeIndex: (n) => { nodeIndex = n }
+})
 const scopeSizeCache = new Map<string, { width: number; height: number }>()
 
-type ScopeBlockKind = 'if' | 'repeat' | 'branch'
 type NodeSize = { width: number; height: number }
 type ScopePadding = { top: number; left: number; right: number; bottom: number }
 
@@ -220,11 +213,11 @@ const isRightCollapsed = ref(false)
 const startResize = () => {
   isResizing.value = true
 
-  window.addEventListener('mousemove', resizePanes)
-  window.addEventListener('mouseup', stopResize)
+  window.addEventListener('pointermove', resizePanes)
+  window.addEventListener('pointerup', stopResize)
 }
 
-const resizePanes = (event: MouseEvent) => {
+const resizePanes = (event: PointerEvent) => {
   if (!isResizing.value) return
 
   const minLeft = 30
@@ -238,8 +231,8 @@ const resizePanes = (event: MouseEvent) => {
 const stopResize = () => {
   isResizing.value = false
 
-  window.removeEventListener('mousemove', resizePanes)
-  window.removeEventListener('mouseup', stopResize)
+  window.removeEventListener('pointermove', resizePanes)
+  window.removeEventListener('pointerup', stopResize)
 
   window.dispatchEvent(new Event('resize'))
 }
@@ -253,10 +246,6 @@ const restoreRightPane = () => {
   isRightCollapsed.value = false
   leftWidth.value = 60
   window.dispatchEvent(new Event('resize'))
-}
-
-const isScopeNode = (node: FlowNode | undefined | null): node is FlowNode & { blockKind: ScopeBlockKind } => {
-  return node?.blockKind === 'if' || node?.blockKind === 'repeat' || node?.blockKind === 'branch'
 }
 
 const getScopePadding = (node: FlowNode | undefined | null): ScopePadding => {
@@ -536,6 +525,10 @@ const installScopePostUpdateGuards = () => {
       syncAllScopeSizes()
     }
 
+    if (context.type === 'nodedragged' || context.type === 'noderesized') {
+      saveEditorState()
+    }
+
     return context
   })
 }
@@ -659,7 +652,10 @@ onMounted(async () => {
     return context
   })
 
-  await createLevelStartNode()
+  const loaded = await tryLoadFromStorage()
+  if (!loaded) {
+    await createLevelStartNode()
+  }
 })
 
 const hasOutput = (node: FlowNode) => {
@@ -747,6 +743,7 @@ const deleteSelectedNode = async () => {
   deleteButtonPosition.value = null
 
   await arrangeNodes()
+  saveEditorState()
 }
 
 const arrangeNodes = async () => {
@@ -762,12 +759,12 @@ const arrangeNodes = async () => {
     options: {
       'elk.algorithm': 'layered',
       'elk.direction': 'RIGHT',
-      'elk.spacing.nodeNode': 80,
-      'elk.layered.spacing.nodeNodeBetweenLayers': 120
+      'elk.spacing.nodeNode': '80',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '120'
     }
   })
 
-  await AreaExtensions.zoomAt(area, editor!.getNodes())
+  //await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
 const deriveProgram = (): ProgramNode[] => {
@@ -846,13 +843,50 @@ const deriveProgram = (): ProgramNode[] => {
   return walkChain(firstId, topLevelIds)
 }
 
+const clearEditor = async () => {
+  if (!editor || !area) return
+  if (!window.confirm('Clear the entire program? This cannot be undone.')) return
+
+  await editor.clear()
+  scopeSizeCache.clear()
+  selectedNode = null
+  deleteButtonPosition.value = null
+  lastNode = null
+  nodeIndex = 0
+  clearStorage()
+  await createLevelStartNode()
+}
+
 const runVisibleProgram = () => {
-  const program = deriveProgram()
-  if (!setProgram(program)) return
-  runProgram()
+  const blockIds = deriveProgram()
+
+  if (!setProgram(blockIds)) {
+    return
+  }
+
+  const snaps = runProgram();
+  if (!snaps || snaps.length === 0) {
+    return;
+  }
+
+  let index = 0;
+
+  gameState.value = snaps[0];
+
+  const interval = window.setInterval(() => {
+    index++;
+
+    if (index >= snaps.length) {
+      clearInterval(interval);
+      return;
+    }
+
+    gameState.value = snaps[index];
+  }, 400);
 }
 
 onBeforeUnmount(() => {
+  flushAndSave()
   reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
   scopeSizeCache.clear()
   area?.destroy()
@@ -886,6 +920,7 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.repeatCount = 3
     node.onRepeatCountChange = (value: number) => {
       node.repeatCount = value
+      saveEditorStateDebounced()
     }
   }
 
@@ -897,12 +932,15 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.customDy = 0
     node.onConditionChange = (value: string) => {
       node.condition = value
+      saveEditorStateDebounced()
     }
     node.onCustomDxChange = (value: number) => {
       node.customDx = value
+      saveEditorStateDebounced()
     }
     node.onCustomDyChange = (value: number) => {
       node.customDy = value
+      saveEditorStateDebounced()
     }
   }
 
@@ -1075,14 +1113,15 @@ const addReteNode = async (payload: BlueprintPayload) => {
 
   if (targetScope) {
     await updateScopeChain(targetScope)
-    await AreaExtensions.zoomAt(area, editor.getNodes())
+    //await AreaExtensions.zoomAt(area, editor.getNodes())
   } else if (node.blockKind === 'if' || node.blockKind === 'repeat') {
-    await AreaExtensions.zoomAt(area, editor.getNodes())
+    //await AreaExtensions.zoomAt(area, editor.getNodes())
   } else {
     await arrangeNodes()
   }
 
   closeRadialMenu()
+  saveEditorState()
 }
 
 // Preview expansion logic
@@ -1124,6 +1163,7 @@ const closePreview = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 350px;
 }
 
 .rete-editor {
@@ -1131,6 +1171,34 @@ const closePreview = () => {
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.floating-clear {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  z-index: 30;
+
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #e53935;
+  color: #ffffff;
+  font-size: 24px;
+
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.floating-clear:hover {
+  transform: translateY(-2px);
 }
 
 .floating-plus {
@@ -1161,13 +1229,12 @@ const closePreview = () => {
   z-index: 25;
 
   display: flex;
-  align-items: flex-end;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: center;
 
   padding: 24px 24px 96px 24px;
 
-  background: rgba(0, 0, 0, 0.12);
-  backdrop-filter: blur(2px);
+  padding: 0;
 }
 
 .node-delete-button {
@@ -1203,19 +1270,19 @@ const closePreview = () => {
 
 .expand-preview-button {
   position: absolute;
-  top: 28px;
+  top: 84px;
   right: 24px;
   z-index: 10;
 
   border: none;
   border-radius: 12px;
-  width: 44px;
   height: 44px;
+  padding: 8px 10px;
 
   background: v-bind('colors.primary');
   color: white;
   cursor: pointer;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .preview-fullscreen {
@@ -1259,19 +1326,27 @@ const closePreview = () => {
 
   border: none;
   border-radius: 12px;
-
-  padding: 10px 16px;
+  height: 44px;
+  padding: 8px 10px;
 
   background: v-bind('colors.primary');
   color: white;
 
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 18px;
 
   cursor: pointer;
 
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
   transition: 0.2s;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-arrow {
+  font-size: 18px;
+  line-height: 1;
 }
 
 .back-button:hover {
@@ -1288,6 +1363,7 @@ const closePreview = () => {
   cursor: col-resize;
   background: #dcdcdc;
   z-index: 50;
+  touch-action: none;
 }
 
 .pane-resizer:hover {
@@ -1348,7 +1424,14 @@ const closePreview = () => {
   .right-pane {
     flex-basis: 40%;
   }
+
+  .radial-menu-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
 }
+
 @media (max-width: 768px) {
   .pane-resizer,
   .right-pane {
@@ -1357,6 +1440,12 @@ const closePreview = () => {
 
   .left-pane {
     flex-basis: 100% !important;
+  }
+
+  .radial-menu-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: 0;
   }
 }
 </style>

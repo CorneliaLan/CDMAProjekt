@@ -67,21 +67,25 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
 <style scoped>
 .grid {
   display: inline-block;
-  padding: 20px;
+  padding: clamp(8px, 2vw, 20px);
   border-radius: 16px;
+
   background: v-bind('colors.gridBackground');
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+
+  max-width: 100%;
+  max-height: 100%;
 }
 
 .row {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: clamp(4px, 1vw, 10px);
+  margin-bottom: clamp(4px, 1vw, 10px);
 }
 
 .cell {
-  width: 60px;
-  height: 60px;
+  width: clamp(28px, 4vw, 60px);
+  height: clamp(28px, 4vw, 60px);
   border-radius: 10px;
 
   display: flex;
@@ -119,7 +123,7 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
 
 /* ICON BASE */
 .icon {
-  font-size: 22px;
+  font-size: clamp(14px, 2.2vw, 22px);
 }
 
 /* PLAYER */

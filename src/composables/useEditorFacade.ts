@@ -9,10 +9,13 @@ import { getLevelById, type LevelDefinition } from '@/core/levels/levelCatalog';
 import { registerBlocksByIds } from '@/core/setup/registerDefaultBlocks';
 import { RepeatBlock } from '@/core/editor/blocks/repeat/RepeatBlock';
 import { BaseIfBlock } from '@/core/editor/blocks/control/BaseIfBlock';
+import type { GameStateView } from '@/core/engine/GameStateView'
+import { mapGameState } from '@/core/engine/mapGameState';
+
 
 const registry = BlockRegistry.getInstance();
 
-type AvailableBlock = {
+export type AvailableBlock = {
   id: string
   label: string
   category: BlockCategory
@@ -35,7 +38,7 @@ function createEngine(level: LevelDefinition): GameEngine {
 
 export function useEditorFacade(levelId: MaybeRef<number>) {
   const engine = shallowRef<GameEngine | null>(null);
-  const gameState = ref<GameState | null>(null);
+  const gameState = ref<GameStateView  | null>(null);
   const executionResult = ref<ExecutionResult | null>(null);
   const availableBlocks = ref<AvailableBlock[]>([]);
   //const ALWAYS_AVAILABLE_BLOCK_IDS = ['level-end'];
@@ -173,15 +176,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   // Load the current level immediately and reload it when the route level id changes.
   watch(() => unref(levelId), loadLevel, { immediate: true, flush: 'sync' });
 
-  const resetGame = (): void => {
-    if (!level.value) return;
-    const newEngine = createEngine(level.value);
-    engine.value = newEngine;
-    gameState.value = newEngine.getState().clone();
-    executionResult.value = null;
-  };
-
-  const runProgram = (): boolean => {
+  /*const runProgram = (): boolean => {
     if (!level.value) {
       return false;
     }
@@ -192,7 +187,53 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     executionResult.value = newEngine.run(programBlocks.value);
     gameState.value = newEngine.getState().clone();
     return true;
-  };
+  };*/
+
+  const snapshots = ref<GameState[]>([])
+
+  const runProgram = (): GameState[] | null => {
+    if (!level.value) {
+      return null
+    }
+
+    const newEngine = createEngine(level.value)
+
+    engine.value = newEngine
+
+    const result = newEngine.run(programBlocks.value)
+
+    executionResult.value = result
+
+    const snaps = newEngine.getSnapshots()
+
+    snapshots.value = snaps
+
+    gameState.value = snaps[0]
+      ? mapGameState(snaps[0])
+      : mapGameState(newEngine.getState())
+
+    return snaps
+  }
+
+  const resetProgram = () => {
+    executionResult.value = null
+    engine.value = null
+    snapshots.value = []
+
+    if (!level.value) return
+
+    const initial = new GameState(
+      level.value.grid,
+      level.value.startX,
+      level.value.startY
+    )
+
+    gameState.value = null
+
+    queueMicrotask(() => {
+      gameState.value = mapGameState(initial.clone())
+    })
+  }
 
   return {
     level,
@@ -205,7 +246,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     replaceProgramBlock,
     deleteProgramBlock,
     clearProgram,
-    resetGame,
-    runProgram
+    runProgram,
+    resetProgram
   };
 }

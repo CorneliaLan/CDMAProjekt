@@ -61,13 +61,15 @@ import type { BlockCategory } from '@/core/editor/BlockCategories'
 
 const activeItem = ref<string | null>(null)
 
-const props = defineProps<{
-  availableBlocks: {
+const props = withDefaults(defineProps<{
+  availableBlocks?: {
     id: string
     label: string
     category: BlockCategory
   }[]
-}>()
+}>(), {
+  availableBlocks: () => []
+})
 
 const emit = defineEmits<{
   select: [payload: {
@@ -75,7 +77,7 @@ const emit = defineEmits<{
     actionId: string
     actionLabel: string
     color: string
-    textColor?: string
+    textColor: string
   }]
 }>()
 
@@ -111,8 +113,7 @@ const categoryMeta = {
 }
 
 const items = computed(() => {
-const grouped = new Map<string, { id: string; label: string }[]>()
-//Map<string, string[]>()
+  const grouped = new Map<string, { id: string; label: string }[]>()
 
   for (const block of props.availableBlocks) {
     const category = String(block.category)
@@ -128,7 +129,7 @@ const grouped = new Map<string, { id: string; label: string }[]>()
     .map(([category, actions]) => {
       const meta = categoryMeta[category as keyof typeof categoryMeta]
 
-      if (!meta) return null
+      if (!meta) return undefined
 
       return {
         ...meta,
@@ -136,7 +137,7 @@ const grouped = new Map<string, { id: string; label: string }[]>()
         actions
       }
     })
-    .filter(Boolean)
+    .filter((item): item is NonNullable<typeof item> => item !== undefined)
 })
 
 const onHover = (item: any) => {
@@ -160,17 +161,24 @@ const onActionClick = (item: any, action: any) => {
 
 <style scoped>
 .radial-menu-container {
-  min-height: 50vh;
-  background: rgba(141, 141, 141, 0.7);
+  width: 45vw;
+  height: 45vw;
+  aspect-ratio: 1 / 1;
+  margin: auto;
+  background: rgba(141, 141, 141, 0.8);
   border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .radial-menu {
   position: relative;
   width: 650px;
   height: 650px;
+  min-width: 450px;
+  min-height: 450px;
   border-radius: 16px;
-  background: rgba(141, 141, 141, 1);
   overflow: visible;
 }
 
@@ -180,7 +188,7 @@ const onActionClick = (item: any, action: any) => {
 }
 
 .axis.horizontal {
-  width: 440px;
+  width: 350px;
   height: 2px;
   top: 50%;
   left: 50%;
@@ -195,7 +203,7 @@ const onActionClick = (item: any, action: any) => {
 
 .axis.vertical {
   width: 2px;
-  height: 440px;
+  height: 350px;
   top: 50%;
   left: 50%;
   transform: translateY(-50%);
@@ -239,25 +247,25 @@ const onActionClick = (item: any, action: any) => {
 }
 
 .menu-item.top {
-  top: 98px;
+  top: 95px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .menu-item.right {
   top: 280px;
-  right: 75px;
+  right: 60px;
 }
 
 .menu-item.bottom {
-  top: 425px;
+  bottom: 50px;
   left: 50%;
   transform: translateX(-50%);
 }
 
 .menu-item.left {
   top: 280px;
-  left: 67px;
+  left: 60px;
 }
 
 .icon-button {
@@ -352,31 +360,39 @@ const onActionClick = (item: any, action: any) => {
 /* Phone */
 @media (max-width: 767px) {
   .radial-menu {
-    width: 360px;
-    height: 360px;
+    width: 280px;
+    height: 280px;
+    min-width: 280px;
+    min-height: 280px;
+  }
+
+  .radial-menu-container {
+    width: 40vw;
+    height: 40vw;
   }
 
   .axis.horizontal {
-    width: 230px;
+    width: 200px;
   }
 
   .axis.vertical {
-    height: 230px;
+    height: 200px;
   }
 
   .center-button {
-    width: 42px;
-    height: 42px;
+    width: 36px;
+    height: 36px;
     font-size: 22px;
   }
 
   .icon-button {
-    width: 46px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
   }
 
   .icon-button ion-icon {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .label {
@@ -386,21 +402,21 @@ const onActionClick = (item: any, action: any) => {
   }
 
   .menu-item.top {
-    top: 20px;
+    top: 8px;
   }
 
   .menu-item.right {
-    top: 150px;
-    right: 32px;
+    top: 116px;
+    right: 8px;
   }
 
   .menu-item.bottom {
-    top: 245px;
+    bottom: 8px;
   }
 
   .menu-item.left {
-    top: 150px;
-    left: 32px;
+    top: 116px;
+    left: 8px;
   }
 
   .submenu {
@@ -415,19 +431,25 @@ const onActionClick = (item: any, action: any) => {
   }
 }
 
-/* Tablet */
-@media (min-width: 768px) and (max-width: 1023px) {
+@media (min-width: 768px) and (max-width: 900px) {
   .radial-menu {
-    width: 520px;
-    height: 520px;
+    width: 360px;
+    height: 360px;
+    min-width: 300px;
+    min-height: 300px;
+  }
+
+  .radial-menu-container {
+    width: 40vw;
+    height: 40vw;
   }
 
   .axis.horizontal {
-    width: 340px;
+    width: 180px;
   }
 
   .axis.vertical {
-    height: 340px;
+    height: 180px;
   }
 
   .center-button {
@@ -437,8 +459,9 @@ const onActionClick = (item: any, action: any) => {
   }
 
   .icon-button {
-    width: 62px;
-    height: 68px;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
   }
 
   .label {
@@ -448,23 +471,149 @@ const onActionClick = (item: any, action: any) => {
   }
 
   .menu-item.top {
-    top: 50px;
+    top: 35px;
   }
 
   .menu-item.right {
-    top: 220px;
-    right: 56px;
+    top: 156px;
+    right: 35px;
   }
 
   .menu-item.bottom {
-    top: 330px;
+    bottom: 35px;
   }
 
   .menu-item.left {
-    top: 220px;
-    left: 56px;
+    top: 156px;
+    left: 35px;
   }
 
+  .submenu-button {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 900px) and (max-width: 1024px) {
+  .radial-menu {
+    width: 450px;
+    height: 450px;
+    min-width: 300px;
+    min-height: 300px;
+  }
+
+  .radial-menu-container {
+    width: 40vw;
+    height: 40vw;
+  }
+
+  .axis.horizontal {
+    width: 220px;
+  }
+
+  .axis.vertical {
+    height: 220px;
+  }
+
+  .center-button {
+    width: 46px;
+    height: 46px;
+    font-size: 23px;
+  }
+
+  .icon-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .label {
+    font-size: 14px;
+    min-width: 78px;
+    padding: 8px 14px;
+  }
+
+  .menu-item.top {
+    top: 70px;
+  }
+
+  .menu-item.right {
+    top: 200px;
+    right: 35px;
+  }
+
+  .menu-item.bottom {
+    bottom: 35px;
+  }
+
+  .menu-item.left {
+    top: 200px;
+    left: 35px;
+  }
+
+  .submenu-button {
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1250px) {
+  .radial-menu {
+    width: 500px;
+    height: 500px;
+    min-width: 450px;
+    min-height: 450px;
+  }
+
+  .radial-menu-container {
+    width: 45vw;
+    height: 45vw;
+  }
+
+  .axis.horizontal {
+    width: 300px;
+  }
+
+  .axis.vertical {
+    height: 300px;
+  }
+
+  .center-button {
+    width: 46px;
+    height: 46px;
+    font-size: 23px;
+  }
+
+  .icon-button {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+  }
+
+  .label {
+    font-size: 14px;
+    min-width: 78px;
+    padding: 8px 14px;
+  }
+
+  .menu-item.top {
+    top: 35px;
+  }
+
+  .menu-item.right {
+    top: 218px;
+    right: 35px;
+  }
+
+  .menu-item.bottom {
+    bottom: 35px;
+  }
+
+  .menu-item.left {
+    top: 218px;
+    left: 35px;
+  }
 
   .submenu-button {
     font-size: 12px;
