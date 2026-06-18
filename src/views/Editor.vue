@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <Header />
+    <Header class="app-header" />
 
     <ion-content
       :fullscreen="true"
@@ -1270,9 +1270,9 @@ const closePreview = () => {
 
 .expand-preview-button {
   position: absolute;
-  top: 84px;
+  top: 80px;
   right: 24px;
-  z-index: 10;
+  z-index: 30;
 
   border: none;
   border-radius: 12px;
@@ -1302,7 +1302,7 @@ const closePreview = () => {
 
 .close-preview-button {
   position: absolute;
-  top: 84px;
+  top: 80px;
   right: 24px;
   z-index: 10001;
 
@@ -1416,7 +1416,7 @@ const closePreview = () => {
   cursor: pointer;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1001px) {
   .left-pane {
     flex-basis: 60%;
   }
@@ -1432,7 +1432,7 @@ const closePreview = () => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1000px) {
   .pane-resizer,
   .right-pane {
     display: none;
@@ -1446,6 +1446,14 @@ const closePreview = () => {
     align-items: center;
     justify-content: center;
     padding: 0;
+  }
+
+  .expand-preview-button {
+    top: 60px;
+  }
+
+  .close-preview-button {
+    top: 60px;
   }
 }
 </style>

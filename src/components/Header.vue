@@ -87,53 +87,18 @@ const isActiveTab = (path: string) => {
   font-size: 18px;
 }
 
-/* TABS
-.tabs {
-  display: flex;
-  gap: 20px;
+@media (max-width: 1000px) {
+  ion-toolbar.custom-header {
+    --min-height: 36px;
+  }
+
+  .header-content {
+    padding: 6px 12px;
+  }
+
+  .logo {
+    font-size: 14px;
+  }
 }
-
-.tabs span {
-  opacity: 0.6;
-  cursor: pointer;
-  transition: 0.2s;
-}*/
-
-/* ACTIVE TAB */
-/*
-.tabs .active {
-  opacity: 1;
-  border-bottom: 2px solid white;
-}*/
-
-/* HOVER */
-/* .tabs span:hover {
-  opacity: 1;
-} */
-
-/* ICONS */
-/* .icons {
-  display: flex;
-  gap: 10px;
-  font-size: 18px;
-}
-
-.icons {
-  display: flex;
-  gap: 14px;
-  font-size: 22px;
-  align-items: center;
-}
-
-.icons ion-icon {
-  cursor: pointer;
-  opacity: 0.8;
-  transition: 0.2s;
-}
-
-.icons ion-icon:hover {
-  opacity: 1;
-  transform: scale(1.1);
-} */ 
 
 </style>

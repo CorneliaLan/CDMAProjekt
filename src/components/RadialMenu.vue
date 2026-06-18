@@ -431,7 +431,7 @@ const onActionClick = (item: any, action: any) => {
   }
 }
 
-@media (min-width: 768px) and (max-width: 900px) {
+@media (max-width: 1000px) and (max-height: 500px) {
   .radial-menu {
     width: 360px;
     height: 360px;
@@ -495,7 +495,7 @@ const onActionClick = (item: any, action: any) => {
 }
 
 /* Tablet */
-@media (min-width: 900px) and (max-width: 1024px) {
+@media (min-width: 1000px) and (max-width: 1200px) and (max-height: 1000px) {
   .radial-menu {
     width: 450px;
     height: 450px;
@@ -558,7 +558,7 @@ const onActionClick = (item: any, action: any) => {
   }
 }
 
-@media (min-width: 1025px) and (max-width: 1250px) {
+@media (min-width: 1200px) and (max-width: 1400px) {
   .radial-menu {
     width: 500px;
     height: 500px;

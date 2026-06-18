@@ -156,8 +156,10 @@ onBeforeUnmount(() => {
 
   display: flex;
   flex-direction: column;
-
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  padding-right: 80px;
+  box-sizing: border-box;
 }
 
 .preview-container {
@@ -268,7 +270,7 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 2500px) and (max-height: 1400px) {
   .error-details {
     grid-template-columns: 1fr;
   }
@@ -276,6 +278,8 @@ onBeforeUnmount(() => {
   .preview-panel {
     flex-direction: row;
     align-items: stretch;
+
+    transform: translateY(7.5%);
   }
   
   .preview-container {
@@ -285,7 +289,7 @@ onBeforeUnmount(() => {
 
   .control-wrapper {
     flex-shrink: 0;
-    padding: 12px;
+    right: 60px;
 
     display: flex;
     align-items: center;

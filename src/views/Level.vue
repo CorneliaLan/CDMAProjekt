@@ -1,6 +1,6 @@
 <template>
   <ion-page>
-    <Header />
+    <Header class="app-header" />
 
     <ion-content :fullscreen="true"
                  :style="{ '--background': colors.background }">
@@ -245,7 +245,8 @@ h1 {
   border-radius: 16px;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1000px) {
+
   .level-page {
     padding: 24px;
   }

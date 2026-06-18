@@ -56,8 +56,7 @@ const emit = defineEmits<{
   border-radius: 20px;
 
   background: v-bind('colors.primaryLight');
-
-  box-shadow: 0 8px 20px v-bind('colors.textMuted');
+  border: 1px solid v-bind('colors.primary');
   
   display: flex;
   width: max-content;
@@ -110,29 +109,30 @@ const emit = defineEmits<{
 }
 
 /* Phone */
-@media (max-width: 767px) {
+@media (max-width: 1000px) {
   .control-bar {
+    margin: 0 0;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     
     height: max-content;
   }
 
   .play-btn {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   }
 
   .actions {
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
 
   .actions ion-icon {
-    font-size: 20px;
-    padding: 10px;
+    font-size: 15px;
+    padding: 8px;
     text-align: center;
     width: 100%;
   }
