@@ -1168,7 +1168,9 @@ const closePreview = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 0;
+  
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 

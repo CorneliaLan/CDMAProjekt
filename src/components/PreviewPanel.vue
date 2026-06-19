@@ -122,22 +122,29 @@ const container = ref<HTMLElement | null>(null)
 let observer: ResizeObserver | null = null
 
 const updateScale = () => {
-  if (!container.value) return
-
   const el = container.value
+  if (!el) return
+
+  const content = el.querySelector('.preview-content') as HTMLElement | null
+  if (!content) return
 
   const maxW = el.clientWidth
   const maxH = el.clientHeight
 
-  const grid = el.querySelector('.grid') as HTMLElement
-  if (!grid) return
+  const contentW = content.scrollWidth
+  const contentH = content.scrollHeight
 
-  const contentW = grid.offsetWidth
-  const contentH = grid.offsetHeight
-
-  const s = Math.min(maxW / contentW, maxH / contentH, 1)
+  const s = Math.min(
+    maxW / contentW,
+    maxH / contentH,
+    1
+  )
 
   scale.value = s
+}
+
+const scheduleUpdate = () => {
+  requestAnimationFrame(updateScale)
 }
 
 onMounted(async () => {
@@ -145,45 +152,45 @@ onMounted(async () => {
 
   updateScale()
 
-  const root = container.value?.closest('.right-pane') as HTMLElement
-  if (!root) return
+  if (!container.value) return
 
   observer = new ResizeObserver(() => {
-    requestAnimationFrame(updateScale)
+    scheduleUpdate()
   })
 
-  observer.observe(root)
+  observer.observe(container.value)
 
+  window.addEventListener('resize', scheduleUpdate)
 })
 
 onBeforeUnmount(() => {
-  if (observer && container.value) {
-    observer.unobserve(container.value)
-  }
+  observer?.disconnect()
+  observer = null
 
-  if (observer) {
-    observer.disconnect()
-    observer = null
-  }
+  window.removeEventListener('resize', scheduleUpdate)
 })
 </script>
 
 <style scoped>
 .preview-panel {
   width: 100%;
-  height: 100%;
+  height: 90%;
 
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-right: 30px;
-  padding-left: 30px;
+  padding-right: 50px;
+  padding-left: 50px;
   box-sizing: border-box;
+
+  transform: translateY(7%);
 }
 
 .preview-container {
   flex: 1;
+  min-height: 0;
+  min-width: 0;
 
   display: flex;
   flex-direction: column;
@@ -300,10 +307,10 @@ onBeforeUnmount(() => {
   }
 
   .preview-panel {
-    flex-direction: row;
+    flex-direction: column;
     align-items: stretch;
 
-    transform: translateY(7.5%);
+    transform: translateY(7%);
   }
   
   .preview-container {
@@ -313,11 +320,28 @@ onBeforeUnmount(() => {
 
   .control-wrapper {
     flex-shrink: 0;
-    right: 60px;
+    bottom: 400px;
 
     display: flex;
     align-items: center;
     justify-content: center;
   }
+}
+
+@media (max-width: 1000px) {
+
+  .preview-panel {
+    flex-direction: row;
+    align-items: stretch;
+
+    transform: translateY(7%);
+  }
+}
+
+.split-layout,
+.pane,
+.right-pane,
+.preview-panel {
+  min-height: 0;
 }
 </style>

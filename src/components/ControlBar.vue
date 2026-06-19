@@ -60,6 +60,8 @@ const emit = defineEmits<{
   
   display: flex;
   width: max-content;
+
+  transition: all 0.2s ease;
 }
 
 /* PLAY BUTTON */
@@ -108,7 +110,7 @@ const emit = defineEmits<{
   background: v-bind('colors.line');
 }
 
-/* Phone */
+/* Phone 
 @media (max-width: 1000px) {
   .control-bar {
     margin: 0 0;
@@ -140,6 +142,48 @@ const emit = defineEmits<{
   .divider {
     width: 100%;
     height: 1px;
+  }
+}*/
+
+@media (max-width: 1000px) {
+  .control-bar {
+    margin: 0 0;
+    flex-direction: column;
+    align-items: center;
+    
+    height: max-content;
+    padding: 10px 14px;
+    gap: 12px;
+    border-radius: 16px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .divider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .play-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .play-btn ion-icon {
+    font-size: 18px;
+  }
+
+  .actions {
+    gap: 12px;
+  }
+
+  .actions ion-icon {
+    font-size: 15px;
   }
 }
 </style>
