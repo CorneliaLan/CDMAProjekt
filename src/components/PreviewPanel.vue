@@ -55,12 +55,14 @@
           </div>
         </div>
 
-        <LevelPreview
+        <div ref="content" class="preview-content">
+          <LevelPreview
             v-if="previewGrid.length"
             :grid="previewGrid"
             :player-x="playerX"
             :player-y="playerY"
-        />
+          />
+        </div>
       </div>
     </div>
 
@@ -117,20 +119,21 @@ import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 const scale = ref(1)
 const container = ref<HTMLElement | null>(null)
 
+let observer: ResizeObserver | null = null
+
 const updateScale = () => {
   if (!container.value) return
 
   const el = container.value
 
-  // wichtig: echte Content-Größe vs verfügbare Größe
   const maxW = el.clientWidth
   const maxH = el.clientHeight
 
-  const content = el.querySelector('.preview-scale') as HTMLElement
-  if (!content) return
+  const grid = el.querySelector('.grid') as HTMLElement
+  if (!grid) return
 
-  const contentW = content.scrollWidth
-  const contentH = content.scrollHeight
+  const contentW = grid.offsetWidth
+  const contentH = grid.offsetHeight
 
   const s = Math.min(maxW / contentW, maxH / contentH, 1)
 
@@ -139,13 +142,29 @@ const updateScale = () => {
 
 onMounted(async () => {
   await nextTick()
+
   updateScale()
 
-  window.addEventListener('resize', updateScale)
+  const root = container.value?.closest('.right-pane') as HTMLElement
+  if (!root) return
+
+  observer = new ResizeObserver(() => {
+    requestAnimationFrame(updateScale)
+  })
+
+  observer.observe(root)
+
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateScale)
+  if (observer && container.value) {
+    observer.unobserve(container.value)
+  }
+
+  if (observer) {
+    observer.disconnect()
+    observer = null
+  }
 })
 </script>
 
@@ -158,7 +177,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-right: 80px;
+  padding-right: 30px;
+  padding-left: 30px;
   box-sizing: border-box;
 }
 
@@ -172,9 +192,6 @@ onBeforeUnmount(() => {
 
   overflow: hidden;
 
-  min-height: 0;
-  min-width: 0;
-
   gap: 18px;
   padding: 18px;
   box-sizing: border-box;
@@ -182,10 +199,14 @@ onBeforeUnmount(() => {
 
 .preview-scale {
   transform-origin: center;
-  display: flex;
+  display: inline-block;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.preview-content {
+  display: inline-block;
 }
 
 .preview-scale :deep(canvas),
@@ -207,6 +228,9 @@ onBeforeUnmount(() => {
   justify-content: center;
 
   padding: 16px;
+
+  left: 20px;
+  right: 20px;
 }
 
 .execution-banner {
@@ -270,7 +294,7 @@ onBeforeUnmount(() => {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 2500px) and (max-height: 1400px) {
+@media (max-width: 1200px) {
   .error-details {
     grid-template-columns: 1fr;
   }

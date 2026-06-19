@@ -65,6 +65,7 @@
               :level="level"
               :game-state="gameState"
               :execution-result="executionResult"
+              :key="previewKey"
               @play="runVisibleProgram"
               @reset="resetProgram"
           />
@@ -95,6 +96,7 @@
               :level="level"
               :game-state="gameState"
               :execution-result="executionResult"
+              :key="previewKey"
               @play="runVisibleProgram"
               @reset="resetProgram"
           />
@@ -228,6 +230,8 @@ const resizePanes = (event: PointerEvent) => {
   leftWidth.value = Math.min(maxLeft, Math.max(minLeft, newLeftWidth))
 }
 
+const previewKey = ref(0)
+
 const stopResize = () => {
   isResizing.value = false
 
@@ -235,6 +239,7 @@ const stopResize = () => {
   window.removeEventListener('pointerup', stopResize)
 
   window.dispatchEvent(new Event('resize'))
+  previewKey.value++
 }
 
 const collapseRightPane = () => {
@@ -1163,7 +1168,8 @@ const closePreview = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 350px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .rete-editor {
@@ -1414,22 +1420,6 @@ const closePreview = () => {
 
   font-weight: 600;
   cursor: pointer;
-}
-
-@media (min-width: 1001px) {
-  .left-pane {
-    flex-basis: 60%;
-  }
-
-  .right-pane {
-    flex-basis: 40%;
-  }
-
-  .radial-menu-overlay {
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-  }
 }
 
 @media (max-width: 1000px) {

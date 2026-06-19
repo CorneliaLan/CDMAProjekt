@@ -1,5 +1,5 @@
 <template>
-  <div class="grid">
+  <div class="grid" ref="gridRef">
     <div v-for="(row, y) in grid" :key="y" class="row">
       <div
         v-for="(cell, x) in row"
@@ -66,7 +66,13 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
 
 <style scoped>
 .grid {
-  display: inline-block;
+  --cell-size: clamp(28px, 3.5rem, 60px);
+
+  display: flex;
+  flex-direction: column;
+  width: max-content;
+  height: max-content;
+
   padding: clamp(8px, 2vw, 20px);
   border-radius: 16px;
 
@@ -79,13 +85,18 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
 
 .row {
   display: flex;
-  gap: clamp(4px, 1vw, 10px);
-  margin-bottom: clamp(4px, 1vw, 10px);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.row:last-child {
+  margin-bottom: 0;
 }
 
 .cell {
-  width: clamp(28px, 4vw, 60px);
-  height: clamp(28px, 4vw, 60px);
+  width: var(--cell-size);
+  height: var(--cell-size);
+
   border-radius: 10px;
 
   display: flex;
@@ -93,6 +104,8 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
   justify-content: center;
 
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+
+  flex-shrink: 0;
 }
 
 /* EMPTY */
@@ -123,14 +136,15 @@ const isChestCell = (cell: number) => cell === RenderCell.Chest || cell === Rend
 
 /* ICON BASE */
 .icon {
-  font-size: clamp(14px, 2.2vw, 22px);
+  font-size: calc(var(--cell-size) * 0.4);
 }
 
 /* PLAYER */
 .player-icon {
   color: white;
   background: v-bind('colors.player');
-  padding: 6px;
+
+  padding: calc(var(--cell-size) * 0.12);
   border-radius: 8px;
 }
 

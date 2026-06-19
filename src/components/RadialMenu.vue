@@ -1,6 +1,6 @@
 <template>
   <div class="radial-menu-container">
-    <div class="radial-menu">
+    <div class="radial-menu" >
       <div class="axis vertical"></div>
       <div class="axis horizontal"></div>
 
@@ -56,7 +56,7 @@ import {
   moveOutline,
 } from 'ionicons/icons'
 import { colors } from '@/theme/colors'
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import type { BlockCategory } from '@/core/editor/BlockCategories'
 
 const activeItem = ref<string | null>(null)
@@ -145,6 +145,11 @@ const onHover = (item: any) => {
 }
 
 const onClick = (item: any) => {
+  if (isMobileMenu.value) {
+    selectedCategory.value = item
+    return
+  }
+
   activeItem.value = activeItem.value === item.label ? null : item.label
 }
 
@@ -157,12 +162,35 @@ const onActionClick = (item: any, action: any) => {
     textColor: item.textColor ?? '#ffffff',
   })
 }
+
+const selectedCategory = ref<any | null>(null)
+
+
+const windowWidth = ref(window.innerWidth)
+
+const updateWindowWidth = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted(() => {
+  window.addEventListener('resize', updateWindowWidth)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateWindowWidth)
+})
+
+const isMobileMenu = computed(() => windowWidth.value <= 1400)
+const goBack = () => {
+  selectedCategory.value = null
+}
+
 </script>
 
 <style scoped>
 .radial-menu-container {
-  width: 45vw;
-  height: 45vw;
+  width: 30vw;
+  height: 30vw;
   aspect-ratio: 1 / 1;
   margin: auto;
   background: rgba(141, 141, 141, 0.8);
@@ -357,6 +385,81 @@ const onActionClick = (item: any, action: any) => {
   transform: scale(1.04);
 }
 
+.mobile-submenu-view {
+  width: 60vw;
+  height: 60vw;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 12px;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.mobile-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.mobile-back-button {
+  width: 180px;
+  height: 44px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: rgba(255,255,255,0.2);
+  color: white;
+  font-weight: 600;
+}
+
+.mobile-action-button {
+  width: 220px;
+  min-height: 46px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: white;
+  color: #0c2d63;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.mobile-category-view {
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  gap: 14px;
+}
+
+.mobile-category-button {
+  width: 220px;
+  height: 56px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: white;
+  color: #0c2d63;
+
+  font-size: 16px;
+  font-weight: 700;
+}
+
 /* Phone */
 @media (max-width: 767px) {
   .radial-menu {
@@ -431,7 +534,7 @@ const onActionClick = (item: any, action: any) => {
   }
 }
 
-@media (max-width: 1000px) and (max-height: 500px) {
+@media (max-width: 1701px) {
   .radial-menu {
     width: 360px;
     height: 360px;
@@ -495,7 +598,7 @@ const onActionClick = (item: any, action: any) => {
 }
 
 /* Tablet */
-@media (min-width: 1000px) and (max-width: 1200px) and (max-height: 1000px) {
+@media (min-width: 1401px) and (max-width: 1700px) {
   .radial-menu {
     width: 450px;
     height: 450px;
@@ -506,6 +609,15 @@ const onActionClick = (item: any, action: any) => {
   .radial-menu-container {
     width: 40vw;
     height: 40vw;
+  }
+
+  .submenu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    min-width: unset;
+    max-width: 220px;
   }
 
   .axis.horizontal {
@@ -558,7 +670,7 @@ const onActionClick = (item: any, action: any) => {
   }
 }
 
-@media (min-width: 1200px) and (max-width: 1400px) {
+@media (max-width: 1400px) {
   .radial-menu {
     width: 500px;
     height: 500px;
@@ -567,22 +679,35 @@ const onActionClick = (item: any, action: any) => {
   }
 
   .radial-menu-container {
-    width: 45vw;
-    height: 45vw;
+    width: 40vw;
+    height: 40vw;
+  }
+
+  .mobile-submenu-view {
+    overflow-y: auto;
+  }
+
+  .submenu {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    min-width: unset;
+    max-width: 220px;
   }
 
   .axis.horizontal {
-    width: 300px;
+    width: 250px;
   }
 
   .axis.vertical {
-    height: 300px;
+    height: 250px;
   }
 
   .center-button {
-    width: 46px;
-    height: 46px;
-    font-size: 23px;
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
   }
 
   .icon-button {
@@ -598,21 +723,21 @@ const onActionClick = (item: any, action: any) => {
   }
 
   .menu-item.top {
-    top: 35px;
+    top: 90px;
   }
 
   .menu-item.right {
     top: 218px;
-    right: 35px;
+    right: 60px;
   }
 
   .menu-item.bottom {
-    bottom: 35px;
+    bottom: 90px;
   }
 
   .menu-item.left {
     top: 218px;
-    left: 35px;
+    left: 60px;
   }
 
   .submenu-button {
