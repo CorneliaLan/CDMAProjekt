@@ -15,7 +15,6 @@
           />
           <div>
             <strong>Level completed</strong>
-            <span>{{ completedSummary }}</span>
             <button class="map-button" @click="goToMap">
               <ion-icon :icon="arrowBackOutline" />
               Back to Map
@@ -38,10 +37,6 @@
               <div>
                 <dt>Code</dt>
                 <dd>{{ runtimeError.code }}</dd>
-              </div>
-              <div>
-                <dt>Steps</dt>
-                <dd>{{ executionResult?.stepsExecuted ?? 0 }}</dd>
               </div>
               <div>
                 <dt>Player</dt>
@@ -112,10 +107,6 @@ const playerY = computed(() => props.gameState?.playerY ?? props.level?.startY)
 const executionResult = computed(() => props.executionResult ?? null)
 const runtimeError = computed(() => executionResult.value?.runtimeError ?? null)
 const levelCompleted = computed(() => executionResult.value?.completed === true)
-const completedSummary = computed(() => {
-  const steps = executionResult.value?.stepsExecuted ?? 0
-  return steps === 1 ? 'Solved in 1 step.' : `Solved in ${steps} steps.`
-})
 
 const formatPosition = (position: { x: number, y: number }) => `x ${position.x}, y ${position.y}`
 const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${move.dy}`
