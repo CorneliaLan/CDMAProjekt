@@ -1,5 +1,5 @@
 import { BlockCategory } from './BlockCategories';
-import { ExecutionContext } from '../engine/ExecutionContext';
+import type { ExecutionContext } from '../engine/ExecutionContext';
 
 /**
  * Base type for all Editor blocks executed by the GameEngine.
@@ -8,6 +8,8 @@ export abstract class BaseBlock {
   abstract readonly id: string;
   abstract readonly label: string;
   abstract readonly category: BlockCategory;
+
+  public sourceNodeId: string | null = null;
 
   // Child blocks are used by control-flow blocks like repeat/if blocks.
   public children: BaseBlock[] = [];

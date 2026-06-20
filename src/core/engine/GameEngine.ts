@@ -1,7 +1,18 @@
 import { BaseBlock } from '../editor/BaseBlock';
+import { BlockCategory } from '../editor/BlockCategories';
 import type { ExecutionResult, RuntimeError, RuntimeErrorCode } from './ExecutionResult';
-import { ExecutionContext } from './ExecutionContext';
+import type { ExecutionContext } from './ExecutionContext';
 import { GameState, TerrainCell } from './GameState';
+
+export type ExecutionStep = {
+  nodeId: string;
+  blockId: string;
+  state: GameState;
+};
+
+export type RunOptions = {
+  startNodeId?: string;
+};
 
 /**
  * Executes Editor block programs against mutable level state.
@@ -17,6 +28,7 @@ export class GameEngine {
   };
 
   private snapshots: GameState[] = []
+  private executionTrace: ExecutionStep[] = []
 
   constructor(initialState: GameState) {
     this.state = initialState;
@@ -29,9 +41,10 @@ export class GameEngine {
     this.debugEnabled = enabled;
   }
 
-  private createContext(): ExecutionContext {
+  private createContext(executeBlock: (block: BaseBlock) => void): ExecutionContext {
     return {
       state: this.state,
+      executeBlock,
       movePlayer: (dx: number, dy: number) => this.movePlayer(dx, dy),
       isWallAt: (dx: number, dy: number) => this.isWallAt(this.state.playerX + dx, this.state.playerY + dy),
       isChestAt: (dx: number, dy: number) => this.state.hasChestAt(this.state.playerX + dx, this.state.playerY + dy),
@@ -134,27 +147,54 @@ export class GameEngine {
     };
   }
 
-  public run(program: BaseBlock[]): ExecutionResult {
+  public run(program: BaseBlock[], options: RunOptions = {}): ExecutionResult {
     this.runtimeError = null;
     this.snapshots = []
-    const context = this.createContext();
+    this.executionTrace = []
     let stepsExecuted = 0;
+    let context!: ExecutionContext;
 
-    this.snapshots.push(this.state.clone())
+    const recordState = (nodeId: string, blockId: string) => {
+      const snapshot = this.state.clone();
 
-    for (const [stepIndex, block] of program.entries()) {
+      this.snapshots.push(snapshot);
+      this.executionTrace.push({
+        nodeId,
+        blockId,
+        state: snapshot
+      });
+    };
+
+    const executeBlock = (block: BaseBlock) => {
+      if (context.shouldStopExecution()) {
+        return;
+      }
+
+      block.execute(context);
+
+      if (block.category !== BlockCategory.ACTION) {
+        return;
+      }
+
+      stepsExecuted += 1;
+
+      if (this.debugEnabled) {
+        console.log(`[GameEngine] ${stepsExecuted}. ${block.id} -> (${this.state.playerX}, ${this.state.playerY})`);
+      }
+
+      recordState(block.sourceNodeId ?? block.id, block.id);
+    };
+
+    context = this.createContext(executeBlock);
+
+    recordState(options.startNodeId ?? 'level-start', 'level-start')
+
+    for (const block of program) {
       if (context.shouldStopExecution()) {
         break;
       }
 
-      block.execute(context);
-      stepsExecuted = stepIndex + 1;
-
-      if (this.debugEnabled) {
-        console.log(`[GameEngine] ${stepIndex + 1}. ${block.id} -> (${this.state.playerX}, ${this.state.playerY})`);
-      }
-      
-      this.snapshots.push(this.state.clone())
+      executeBlock(block);
 
       if (context.shouldStopExecution()) {
         break;
@@ -180,5 +220,9 @@ export class GameEngine {
 
   getSnapshots(): GameState[] {
     return this.snapshots;
+  }
+
+  getExecutionTrace(): ExecutionStep[] {
+    return this.executionTrace;
   }
 }

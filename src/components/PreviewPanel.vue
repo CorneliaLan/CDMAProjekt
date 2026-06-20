@@ -64,8 +64,16 @@
     </div>
 
     <div class="control-wrapper">
-      <ControlBar @play="emit('play')"
-                  @reset="emit('reset')" />
+      <ControlBar
+        :debug-active="debugActive"
+        :can-debug-back="canDebugBack"
+        :can-debug-forward="canDebugForward"
+        @play="emit('play')"
+        @debug-start="emit('debugStart')"
+        @debug-previous="emit('debugPrevious')"
+        @debug-next="emit('debugNext')"
+        @reset="emit('reset')"
+      />
     </div>
   </div>
 </template>
@@ -94,10 +102,16 @@ const props = defineProps<{
   level: LevelDefinition | null
   gameState: GameStateView | null
   executionResult?: ExecutionResult | null
+  debugActive?: boolean
+  canDebugBack?: boolean
+  canDebugForward?: boolean
 }>()
 
 const emit = defineEmits<{
   play: []
+  debugStart: []
+  debugPrevious: []
+  debugNext: []
   reset: []
 }>()
 
@@ -105,6 +119,9 @@ const previewGrid = computed(() => props.gameState?.grid ?? props.level?.grid ??
 const playerX = computed(() => props.gameState?.playerX ?? props.level?.startX)
 const playerY = computed(() => props.gameState?.playerY ?? props.level?.startY)
 const executionResult = computed(() => props.executionResult ?? null)
+const debugActive = computed(() => props.debugActive ?? false)
+const canDebugBack = computed(() => props.canDebugBack ?? false)
+const canDebugForward = computed(() => props.canDebugForward ?? false)
 const runtimeError = computed(() => executionResult.value?.runtimeError ?? null)
 const levelCompleted = computed(() => executionResult.value?.completed === true)
 

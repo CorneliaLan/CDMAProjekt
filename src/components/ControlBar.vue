@@ -2,19 +2,45 @@
   <div class="control-bar">
 
     <!-- PLAY BUTTON -->
-    <button class="play-btn" type="button" @click="emit('play')">
+    <button class="primary-btn" type="button" title="Play" aria-label="Play" @click="emit('play')">
       <ion-icon name="play"></ion-icon>
     </button>
 
     <!-- ACTIONS -->
     <div class="actions">
-      <ion-icon name="pause"></ion-icon>
-      <ion-icon name="play-skip-forward"></ion-icon>
-      <ion-icon name="square-outline"></ion-icon>
+      <button class="icon-btn" type="button" title="Start debug" aria-label="Start debug" @click="emit('debugStart')">
+        <ion-icon name="bug-outline"></ion-icon>
+      </button>
+
+      <button
+        v-if="debugActive"
+        class="icon-btn"
+        type="button"
+        title="Previous debug step"
+        aria-label="Previous debug step"
+        :disabled="!canDebugBack"
+        @click="emit('debugPrevious')"
+      >
+        <ion-icon name="play-skip-back"></ion-icon>
+      </button>
+
+      <button
+        v-if="debugActive"
+        class="icon-btn"
+        type="button"
+        title="Next debug step"
+        aria-label="Next debug step"
+        :disabled="!canDebugForward"
+        @click="emit('debugNext')"
+      >
+        <ion-icon name="play-skip-forward"></ion-icon>
+      </button>
 
       <div class="divider"></div>
 
-      <ion-icon name="refresh" @click="emit('reset')" ></ion-icon>
+      <button class="icon-btn" type="button" title="Reset" aria-label="Reset" @click="emit('reset')">
+        <ion-icon name="refresh"></ion-icon>
+      </button>
     </div>
 
   </div>
@@ -27,22 +53,31 @@ import { IonIcon } from '@ionic/vue'
 import { addIcons } from 'ionicons'
 import {
   play,
-  pause,
+  bugOutline,
+  playSkipBack,
   playSkipForward,
-  squareOutline,
   refresh
 } from 'ionicons/icons'
 
 addIcons({
   play,
-  pause,
+  bugOutline,
+  playSkipBack,
   playSkipForward,
-  squareOutline,
   refresh
 })
 
+defineProps<{
+  debugActive?: boolean
+  canDebugBack?: boolean
+  canDebugForward?: boolean
+}>()
+
 const emit = defineEmits<{
   play: []
+  debugStart: []
+  debugPrevious: []
+  debugNext: []
   reset: []
 }>()
 </script>
@@ -63,8 +98,7 @@ const emit = defineEmits<{
   width: max-content;
 }
 
-/* PLAY BUTTON */
-.play-btn {
+.primary-btn {
   width: 48px;
   height: 48px;
   border-radius: 14px;
@@ -79,7 +113,7 @@ const emit = defineEmits<{
   cursor: pointer;
 }
 
-.play-btn ion-icon {
+.primary-btn ion-icon {
   color: v-bind('colors.primaryBorder');
   font-size: 22px;
 }
@@ -91,15 +125,33 @@ const emit = defineEmits<{
   gap: 20px;
 }
 
-.actions ion-icon {
-  font-size: 18px;
-  color: v-bind('colors.textMuted');
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
   transition: 0.2s;
 }
 
-.actions ion-icon:hover {
+.icon-btn ion-icon {
+  font-size: 18px;
+  color: v-bind('colors.textMuted');
+  transition: 0.2s;
+}
+
+.icon-btn:hover:not(:disabled) ion-icon {
   color: v-bind('colors.primary');
+}
+
+.icon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 /* DIVIDER */
@@ -119,7 +171,7 @@ const emit = defineEmits<{
     height: max-content;
   }
 
-  .play-btn {
+  .primary-btn {
   width: 48px;
   height: 48px;
   }
@@ -130,11 +182,15 @@ const emit = defineEmits<{
     gap: 12px;
   }
 
-  .actions ion-icon {
+  .icon-btn {
     font-size: 20px;
     padding: 10px;
     text-align: center;
     width: 100%;
+  }
+
+  .icon-btn ion-icon {
+    font-size: 20px;
   }
 
   .divider {
