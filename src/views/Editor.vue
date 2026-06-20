@@ -106,7 +106,7 @@
 
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline, trashOutline, eyeOutline, arrowBackOutline } from 'ionicons/icons'
@@ -132,6 +132,12 @@ import Preview from '@/components/PreviewPanel.vue'
 import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
 import { useEditorPersistence } from '@/composables/useEditorPersistence'
 import {
+  getLevelStatus,
+  markLevelComplete,
+  LEVEL_PROGRESS_CHANGED_EVENT
+} from '@/composables/useLevelProgress'
+import { LEVEL_DEFINITIONS } from '@/core/levels/levelCatalog'
+import {
   FlowNode,
   FlowConnection,
   isScopeNode,
@@ -149,6 +155,22 @@ const goToMap = () => {
 }
 
 const levelId = computed(() => Number(route.params.id))
+const orderedLevelIds = LEVEL_DEFINITIONS.map((level) => level.id)
+
+const redirectIfLevelLocked = () => {
+  if (route.name !== 'Editor') return
+  if (!Number.isInteger(levelId.value)) return
+  if (getLevelStatus(levelId.value, orderedLevelIds) !== 'locked') return
+
+  router.replace({
+    name: 'Level',
+    params: {
+      id: String(levelId.value)
+    }
+  })
+}
+
+watch(levelId, redirectIfLevelLocked, { immediate: true })
 
 const {
   level,
@@ -563,6 +585,7 @@ const createLevelStartNode = async () => {
 
 onMounted(async () => {
   if (!reteContainer.value) return
+  window.addEventListener(LEVEL_PROGRESS_CHANGED_EVENT, redirectIfLevelLocked)
 
   editor = new NodeEditor<Schemes>()
   area = new AreaPlugin<Schemes, AreaExtra>(reteContainer.value)
@@ -869,6 +892,10 @@ const runVisibleProgram = () => {
     return;
   }
 
+  if (executionResult.value?.completed === true) {
+    markLevelComplete(levelId.value)
+  }
+
   let index = 0;
 
   gameState.value = snaps[0];
@@ -887,6 +914,7 @@ const runVisibleProgram = () => {
 
 onBeforeUnmount(() => {
   flushAndSave()
+  window.removeEventListener(LEVEL_PROGRESS_CHANGED_EVENT, redirectIfLevelLocked)
   reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
   scopeSizeCache.clear()
   area?.destroy()

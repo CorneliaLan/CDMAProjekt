@@ -16,6 +16,10 @@
           <div>
             <strong>Level completed</strong>
             <span>{{ completedSummary }}</span>
+            <button class="map-button" @click="goToMap">
+              <ion-icon :icon="arrowBackOutline" />
+              Back to Map
+            </button>
           </div>
         </div>
 
@@ -72,10 +76,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
 import { addIcons } from 'ionicons'
-import { alertCircle, checkmarkCircle } from 'ionicons/icons'
+import { alertCircle, arrowBackOutline, checkmarkCircle } from 'ionicons/icons'
 import LevelPreview from '@/components/LevelPreview.vue'
 import ControlBar from '@/components/ControlBar.vue'
 import type { GameStateView } from '@/core/engine/GameStateView'
@@ -84,8 +89,11 @@ import type { LevelDefinition } from '@/core/levels/levelCatalog'
 
 addIcons({
   alertCircle,
+  arrowBackOutline,
   checkmarkCircle
 })
+
+const router = useRouter()
 
 const props = defineProps<{
   level: LevelDefinition | null
@@ -112,7 +120,9 @@ const completedSummary = computed(() => {
 const formatPosition = (position: { x: number, y: number }) => `x ${position.x}, y ${position.y}`
 const formatMove = (move: { dx: number, dy: number }) => `dx ${move.dx}, dy ${move.dy}`
 
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+const goToMap = () => {
+  router.push({ name: 'Map' })
+}
 
 const scale = ref(1)
 const container = ref<HTMLElement | null>(null)
@@ -233,6 +243,24 @@ onBeforeUnmount(() => {
   color: #064e2f;
   background: linear-gradient(135deg, #dcfce7 0%, #86efac 100%);
   border: 2px solid #22c55e;
+}
+
+.map-button {
+  margin-top: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #064e2f;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 10px 14px;
+}
+
+.map-button ion-icon {
+  font-size: 18px;
 }
 
 .error-banner {

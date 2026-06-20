@@ -3,7 +3,15 @@
     <ion-toolbar class="custom-header">
       <div class="header-content">
 
-        <div class="logo">LearnQube</div>
+        <div class="logo" @click="handleLogoTap">LearnQube</div>
+
+        <button
+          v-if="debugUnlockEnabled"
+          class="debug-reset-button"
+          @click="handleDebugReset"
+        >
+          Reset Debug Unlock
+        </button>
 
         <!-- TABS -->
       <!--  <div class="tabs">
@@ -30,8 +38,15 @@
 </template>
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { IonHeader, IonToolbar } from '@ionic/vue'
 import { useRoute, useRouter } from 'vue-router'
+import {
+  enableDebugUnlock,
+  isDebugUnlockEnabled,
+  resetDebugUnlock,
+  LEVEL_PROGRESS_CHANGED_EVENT
+} from '@/composables/useLevelProgress'
 import { colors } from '@/theme/colors'
 import { IonIcon } from '@ionic/vue'
 
@@ -46,6 +61,10 @@ addIcons({
 
 const route = useRoute()
 const router = useRouter()
+const debugUnlockEnabled = ref(false)
+
+let logoTapCount = 0
+let logoTapResetTimer: ReturnType<typeof setTimeout> | null = null
 
 // const tabs = [
 //   { name: 'Map', path: '/map' },
@@ -65,6 +84,49 @@ const isActiveTab = (path: string) => {
   }
   return route.path === path
 }
+
+const syncDebugUnlock = () => {
+  debugUnlockEnabled.value = isDebugUnlockEnabled()
+}
+
+const clearLogoTapResetTimer = () => {
+  if (logoTapResetTimer === null) return
+
+  clearTimeout(logoTapResetTimer)
+  logoTapResetTimer = null
+}
+
+const handleLogoTap = () => {
+  logoTapCount++
+  clearLogoTapResetTimer()
+
+  if (logoTapCount >= 9) {
+    logoTapCount = 0
+    enableDebugUnlock()
+    syncDebugUnlock()
+    return
+  }
+
+  logoTapResetTimer = setTimeout(() => {
+    logoTapCount = 0
+    logoTapResetTimer = null
+  }, 2000)
+}
+
+const handleDebugReset = () => {
+  resetDebugUnlock()
+  syncDebugUnlock()
+}
+
+onMounted(() => {
+  syncDebugUnlock()
+  window.addEventListener(LEVEL_PROGRESS_CHANGED_EVENT, syncDebugUnlock)
+})
+
+onBeforeUnmount(() => {
+  clearLogoTapResetTimer()
+  window.removeEventListener(LEVEL_PROGRESS_CHANGED_EVENT, syncDebugUnlock)
+})
 </script>
 
 <style scoped>
@@ -75,9 +137,9 @@ const isActiveTab = (path: string) => {
 }
 
 .header-content {
-  /*display: flex;*/
+  display: flex;
   align-items: center;
- /* justify-content: space-between;*/
+  justify-content: space-between;
   padding: 12px;
 }
 
@@ -85,6 +147,17 @@ const isActiveTab = (path: string) => {
 .logo {
   font-weight: bold;
   font-size: 18px;
+  user-select: none;
+}
+
+.debug-reset-button {
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  color: white;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 8px 12px;
 }
 
 /* TABS
