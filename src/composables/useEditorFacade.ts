@@ -1,5 +1,5 @@
 import { computed, ref, shallowRef, unref, watch, type MaybeRef } from 'vue';
-import { GameEngine } from '@/core/engine/GameEngine';
+import { GameEngine, type ExecutionStep } from '@/core/engine/GameEngine';
 import { BlockRegistry } from '@/core/editor/BlockRegistry';
 import { GameState } from '@/core/engine/GameState';
 import type { ExecutionResult } from '@/core/engine/ExecutionResult';
@@ -23,6 +23,7 @@ export type AvailableBlock = {
 
 export type ProgramNode = {
   blockId: string
+  nodeId: string
   repeatCount?: number
   children?: ProgramNode[]
   condition?: string
@@ -30,6 +31,11 @@ export type ProgramNode = {
   customDy?: number
   trueChildren?: ProgramNode[]
   elseChildren?: ProgramNode[]
+}
+
+export type ProgramRun = {
+  trace: ExecutionStep[]
+  result: ExecutionResult
 }
 
 function createEngine(level: LevelDefinition): GameEngine {
@@ -106,6 +112,8 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
       for (const node of nodeList) {
         const block = registry.getBlock(node.blockId);
         if (!block) return null;
+
+        block.sourceNodeId = node.nodeId;
 
         if (node.repeatCount !== undefined && block instanceof RepeatBlock) {
           block.iterations = node.repeatCount;
@@ -190,35 +198,50 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
   };*/
 
   const snapshots = ref<GameState[]>([])
+  const executionTrace = ref<ExecutionStep[]>([])
 
-  const runProgram = (): GameState[] | null => {
+  const runProgram = (
+    startNodeId?: string,
+    options: { publishResult?: boolean } = {}
+  ): ProgramRun | null => {
     if (!level.value) {
       return null
     }
 
+    const publishResult = options.publishResult ?? true
     const newEngine = createEngine(level.value)
 
     engine.value = newEngine
 
-    const result = newEngine.run(programBlocks.value)
+    const result = newEngine.run(programBlocks.value, { startNodeId })
 
-    executionResult.value = result
+    executionResult.value = publishResult ? result : null
 
     const snaps = newEngine.getSnapshots()
+    const trace = newEngine.getExecutionTrace()
 
     snapshots.value = snaps
+    executionTrace.value = trace
 
-    gameState.value = snaps[0]
-      ? mapGameState(snaps[0])
+    gameState.value = trace[0]
+      ? mapGameState(trace[0].state)
       : mapGameState(newEngine.getState())
 
-    return snaps
+    return {
+      trace,
+      result
+    }
+  }
+
+  const publishExecutionResult = (result: ExecutionResult | null) => {
+    executionResult.value = result
   }
 
   const resetProgram = () => {
     executionResult.value = null
     engine.value = null
     snapshots.value = []
+    executionTrace.value = []
 
     if (!level.value) return
 
@@ -247,6 +270,7 @@ export function useEditorFacade(levelId: MaybeRef<number>) {
     deleteProgramBlock,
     clearProgram,
     runProgram,
+    publishExecutionResult,
     resetProgram
   };
 }

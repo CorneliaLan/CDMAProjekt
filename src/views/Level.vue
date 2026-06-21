@@ -42,7 +42,11 @@
                 Back to Map
               </button>
 
-              <button class="start-button" @click="startLevel">
+              <button
+                class="start-button"
+                :disabled="!canStartLevel"
+                @click="startLevel"
+              >
                 START LEVEL
                 <ion-icon :icon="playOutline" />
               </button>
@@ -55,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import {
@@ -67,6 +71,7 @@ import {
 } from 'ionicons/icons'
 import Header from '@/components/Header.vue'
 import { Maps } from '@/composables/Maps'
+import { LEVEL_PROGRESS_CHANGED_EVENT } from '@/composables/useLevelProgress'
 import { colors } from '@/theme/colors'
 const router = useRouter()
 const route = useRoute()
@@ -80,12 +85,17 @@ const currentLevel = computed(() => {
 })
 
 const complexity = computed(() => currentLevel.value?.complexity ?? 1)
+const canStartLevel = computed(() => {
+  return currentLevel.value !== undefined && currentLevel.value.status !== 'locked'
+})
 
 const goToMap = () => {
   router.push({ name: 'Map' })
 }
 
 const startLevel = () => {
+  if (!canStartLevel.value) return
+
   router.push({
     name: 'Editor',
     params: {
@@ -96,6 +106,11 @@ const startLevel = () => {
 
 onMounted(() => {
   recalcNodes()
+  window.addEventListener(LEVEL_PROGRESS_CHANGED_EVENT, recalcNodes)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener(LEVEL_PROGRESS_CHANGED_EVENT, recalcNodes)
 })
 </script>
 
@@ -245,8 +260,14 @@ h1 {
   border-radius: 16px;
 }
 
-@media (max-width: 1000px) {
 
+.start-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+@media (max-width: 1000px) {
   .level-page {
     padding: 24px;
   }

@@ -13,6 +13,8 @@ export class FlowNode extends ClassicPreset.Node {
   color = '#8799f6'
   textColor = '#ffffff'
   deletable = true
+  debugActive = false
+  debugErrorActive = false
   blockKind: 'event' | 'action' | 'repeat' | 'if' | 'branch' = 'action'
   scopeRole?: 'repeat' | 'if-true' | 'if-else'
   repeatCount = 3

@@ -66,8 +66,14 @@
               :game-state="gameState"
               :execution-result="executionResult"
               :key="previewKey"
+              :debug-active="isDebugging"
+              :can-debug-back="canDebugBack"
+              :can-debug-forward="canDebugForward"
               @play="runVisibleProgram"
-              @reset="resetProgram"
+              @debug-start="startDebugPlayback"
+              @debug-previous="showPreviousDebugStep"
+              @debug-next="showNextDebugStep"
+              @reset="resetVisibleProgram"
           />
         </section>
 
@@ -97,8 +103,14 @@
               :game-state="gameState"
               :execution-result="executionResult"
               :key="previewKey"
+              :debug-active="isDebugging"
+              :can-debug-back="canDebugBack"
+              :can-debug-forward="canDebugForward"
               @play="runVisibleProgram"
-              @reset="resetProgram"
+              @debug-start="startDebugPlayback"
+              @debug-previous="showPreviousDebugStep"
+              @debug-next="showNextDebugStep"
+              @reset="resetVisibleProgram"
           />
         </div>
       </div>
@@ -108,7 +120,7 @@
 
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonContent, IonIcon, IonPage } from '@ionic/vue'
 import { addOutline, trashOutline, eyeOutline, arrowBackOutline } from 'ionicons/icons'
@@ -131,8 +143,14 @@ import {
 } from 'rete-auto-arrange-plugin'
 import Preview from '@/components/PreviewPanel.vue'
 
-import { useEditorFacade, type ProgramNode } from '@/composables/useEditorFacade'
+import { useEditorFacade, type ProgramNode, type ProgramRun } from '@/composables/useEditorFacade'
 import { useEditorPersistence } from '@/composables/useEditorPersistence'
+import {
+  getLevelStatus,
+  markLevelComplete,
+  LEVEL_PROGRESS_CHANGED_EVENT
+} from '@/composables/useLevelProgress'
+import { LEVEL_DEFINITIONS } from '@/core/levels/levelCatalog'
 import {
   FlowNode,
   FlowConnection,
@@ -142,6 +160,8 @@ import {
   type BlueprintPayload,
   type ScopeBlockKind
 } from '@/types/FlowNodes'
+import type { ExecutionResult } from '@/core/engine/ExecutionResult'
+import type { ExecutionStep } from '@/core/engine/GameEngine'
 
 const route = useRoute()
 const router = useRouter()
@@ -151,6 +171,22 @@ const goToMap = () => {
 }
 
 const levelId = computed(() => Number(route.params.id))
+const orderedLevelIds = LEVEL_DEFINITIONS.map((level) => level.id)
+
+const redirectIfLevelLocked = () => {
+  if (route.name !== 'Editor') return
+  if (!Number.isInteger(levelId.value)) return
+  if (getLevelStatus(levelId.value, orderedLevelIds) !== 'locked') return
+
+  router.replace({
+    name: 'Level',
+    params: {
+      id: String(levelId.value)
+    }
+  })
+}
+
+watch(levelId, redirectIfLevelLocked, { immediate: true })
 
 const {
   level,
@@ -159,6 +195,7 @@ const {
   availableBlocks,
   setProgram,
   runProgram,
+  publishExecutionResult,
   resetProgram
 } = useEditorFacade(levelId)
 
@@ -200,6 +237,17 @@ const scopeMinSizes: Record<ScopeBlockKind, NodeSize> = {
 /// Delete functionality
 let selectedNode: FlowNode | null = null
 const deleteButtonPosition = ref<{ x: number; y: number } | null>(null)
+let playbackTimer: number | null = null
+let activeDebugNodeId: string | null = null
+let activeDebugNodeIsError = false
+const isDebugging = ref(false)
+const currentDebugStepIndex = ref(0)
+const playbackTrace = ref<ExecutionStep[]>([])
+const playbackResult = ref<ExecutionResult | null>(null)
+const canDebugBack = computed(() => isDebugging.value && currentDebugStepIndex.value > 0)
+const canDebugForward = computed(() =>
+  isDebugging.value && currentDebugStepIndex.value < playbackTrace.value.length - 1
+)
 
 const {
   isOpen: isRadialMenuOpen,
@@ -568,6 +616,7 @@ const createLevelStartNode = async () => {
 
 onMounted(async () => {
   if (!reteContainer.value) return
+  window.addEventListener(LEVEL_PROGRESS_CHANGED_EVENT, redirectIfLevelLocked)
 
   editor = new NodeEditor<Schemes>()
   area = new AreaPlugin<Schemes, AreaExtra>(reteContainer.value)
@@ -728,6 +777,8 @@ const removeConnectionsForNodes = async (nodeIds: Set<string>) => {
 const deleteSelectedNode = async () => {
   if (!editor || !selectedNode || !selectedNode.deletable) return
 
+  clearPlaybackState()
+
   const node = selectedNode
   const descendants = collectDescendants(node.id)
   const nodesToRemove = [...descendants, node]
@@ -772,15 +823,94 @@ const arrangeNodes = async () => {
   //await AreaExtensions.zoomAt(area, editor!.getNodes())
 }
 
-const deriveProgram = (): ProgramNode[] => {
-  if (!editor) return []
+const clearPlaybackTimer = () => {
+  if (playbackTimer === null) return
+
+  window.clearInterval(playbackTimer)
+  playbackTimer = null
+}
+
+const setDebugActiveNode = (nodeId: string | null, isError = false) => {
+  if (activeDebugNodeId === nodeId && activeDebugNodeIsError === isError) return
+
+  const idsToUpdate = new Set(
+    [activeDebugNodeId, nodeId].filter((id): id is string => Boolean(id))
+  )
+
+  activeDebugNodeId = nodeId
+  activeDebugNodeIsError = isError
+
+  if (!editor || !area) return
+
+  for (const id of idsToUpdate) {
+    const node = editor.getNode(id) as FlowNode | undefined
+
+    if (!node) continue
+
+    node.debugActive = id === nodeId
+    node.debugErrorActive = id === nodeId && isError
+    void area.update('node', id)
+  }
+}
+
+const clearPlaybackState = () => {
+  clearPlaybackTimer()
+  isDebugging.value = false
+  currentDebugStepIndex.value = 0
+  playbackTrace.value = []
+  playbackResult.value = null
+  setDebugActiveNode(null)
+  publishExecutionResult(null)
+}
+
+const resetVisibleProgram = () => {
+  clearPlaybackState()
+  resetProgram()
+}
+
+const showTraceState = (index: number) => {
+  const step = playbackTrace.value[index]
+
+  if (!step) return false
+
+  gameState.value = step.state
+  return true
+}
+
+const publishPlaybackResult = () => {
+  publishExecutionResult(playbackResult.value)
+
+  if (playbackResult.value?.completed === true) {
+    markLevelComplete(levelId.value)
+  }
+}
+
+const showDebugStep = (index: number) => {
+  if (!showTraceState(index)) return
+
+  currentDebugStepIndex.value = index
+  const isErrorStep = index === playbackTrace.value.length - 1
+    && playbackResult.value?.runtimeError !== null
+
+  setDebugActiveNode(playbackTrace.value[index].nodeId, isErrorStep)
+
+  if (index === playbackTrace.value.length - 1) {
+    publishPlaybackResult()
+    return
+  }
+
+  publishExecutionResult(null)
+}
+
+const deriveProgram = (): { startNodeId: string; nodes: ProgramNode[] } | null => {
+  if (!editor) return null
 
   const nodes = editor.getNodes() as FlowNode[]
   const connections = editor.getConnections()
   const nodesById = new Map(nodes.map((node) => [node.id, node]))
   const startNode = nodes.find((node) => node.nodeKind === 'start')
 
-  if (!startNode) return []
+  if (!startNode) return null
 
   const walkChain = (firstNodeId: string, scopeIds: Set<string>): ProgramNode[] => {
     const result: ProgramNode[] = []
@@ -792,7 +922,10 @@ const deriveProgram = (): ProgramNode[] => {
       visited.add(currentId)
 
       if (node.nodeKind !== 'end' && node.blockId) {
-        const pNode: ProgramNode = { blockId: node.blockId }
+        const pNode: ProgramNode = {
+          blockId: node.blockId,
+          nodeId: node.id
+        }
 
         if (node.blockKind === 'repeat') {
           pNode.repeatCount = node.repeatCount
@@ -844,13 +977,19 @@ const deriveProgram = (): ProgramNode[] => {
 
   const topLevelIds = new Set(nodes.filter((n) => !n.parent).map((n) => n.id))
   const firstId = connections.find((c) => c.source === startNode.id)?.target
-  if (!firstId) return []
-  return walkChain(firstId, topLevelIds)
+  const programNodes = firstId ? walkChain(firstId, topLevelIds) : []
+
+  return {
+    startNodeId: startNode.id,
+    nodes: programNodes
+  }
 }
 
 const clearEditor = async () => {
   if (!editor || !area) return
   if (!window.confirm('Clear the entire program? This cannot be undone.')) return
+
+  clearPlaybackState()
 
   await editor.clear()
   scopeSizeCache.clear()
@@ -862,36 +1001,89 @@ const clearEditor = async () => {
   await createLevelStartNode()
 }
 
-const runVisibleProgram = () => {
-  const blockIds = deriveProgram()
+const prepareProgramRun = (): ProgramRun | null => {
+  const derivedProgram = deriveProgram()
 
-  if (!setProgram(blockIds)) {
+  if (!derivedProgram) {
+    return null
+  }
+
+  if (!setProgram(derivedProgram.nodes)) {
+    return null
+  }
+
+  return runProgram(derivedProgram.startNodeId, { publishResult: false })
+}
+
+const runVisibleProgram = () => {
+  clearPlaybackState()
+
+  const run = prepareProgramRun()
+
+  if (!run || run.trace.length === 0) {
     return
   }
 
-  const snaps = runProgram();
-  if (!snaps || snaps.length === 0) {
-    return;
-  }
+  playbackTrace.value = run.trace
+  playbackResult.value = run.result
 
   let index = 0;
 
-  gameState.value = snaps[0];
+  showTraceState(index)
 
-  const interval = window.setInterval(() => {
+  if (playbackTrace.value.length === 1) {
+    publishPlaybackResult()
+    return
+  }
+
+  playbackTimer = window.setInterval(() => {
     index++;
 
-    if (index >= snaps.length) {
-      clearInterval(interval);
+    if (index >= playbackTrace.value.length) {
+      clearPlaybackTimer()
       return;
     }
 
-    gameState.value = snaps[index];
+    showTraceState(index)
+
+    if (index >= playbackTrace.value.length - 1) {
+      clearPlaybackTimer()
+      publishPlaybackResult()
+    }
   }, 400);
 }
 
+const startDebugPlayback = () => {
+  clearPlaybackState()
+
+  const run = prepareProgramRun()
+
+  if (!run || run.trace.length === 0) {
+    return
+  }
+
+  playbackTrace.value = run.trace
+  playbackResult.value = run.result
+  isDebugging.value = true
+  showDebugStep(0)
+}
+
+const showPreviousDebugStep = () => {
+  if (!canDebugBack.value) return
+
+  showDebugStep(currentDebugStepIndex.value - 1)
+}
+
+const showNextDebugStep = () => {
+  if (!canDebugForward.value) return
+
+  showDebugStep(currentDebugStepIndex.value + 1)
+}
+
 onBeforeUnmount(() => {
+  clearPlaybackTimer()
   flushAndSave()
+  window.removeEventListener(LEVEL_PROGRESS_CHANGED_EVENT, redirectIfLevelLocked)
   reteContainer.value?.removeEventListener('pointerdown', lockScopeSizeBeforePointerDown, true)
   scopeSizeCache.clear()
   area?.destroy()
@@ -924,6 +1116,7 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.scopeRole = 'repeat'
     node.repeatCount = 3
     node.onRepeatCountChange = (value: number) => {
+      clearPlaybackState()
       node.repeatCount = value
       saveEditorStateDebounced()
     }
@@ -936,14 +1129,17 @@ const createFlowNode = (payload: BlueprintPayload) => {
     node.customDx = 0
     node.customDy = 0
     node.onConditionChange = (value: string) => {
+      clearPlaybackState()
       node.condition = value
       saveEditorStateDebounced()
     }
     node.onCustomDxChange = (value: number) => {
+      clearPlaybackState()
       node.customDx = value
       saveEditorStateDebounced()
     }
     node.onCustomDyChange = (value: number) => {
+      clearPlaybackState()
       node.customDy = value
       saveEditorStateDebounced()
     }
@@ -1085,6 +1281,8 @@ const addIfBranches = async (node: FlowNode, x: number, y: number) => {
 
 const addReteNode = async (payload: BlueprintPayload) => {
   if (!editor || !area) return
+
+  clearPlaybackState()
 
   const targetScope = getInsertionScope()
   const previousScopedNode = targetScope ? getLastScopedNode(targetScope.id) : null

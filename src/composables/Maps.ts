@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { getLevelStatus } from '@/composables/useLevelProgress'
 import { LEVEL_DEFINITIONS } from '@/core/levels/levelCatalog'
 
 export type NodeStatus = 'complete' | 'active' | 'locked'
@@ -34,10 +35,12 @@ export function Maps() {
     // =========================
     // NODES
     // =========================
+    const orderedLevelIds = LEVEL_DEFINITIONS.map((level) => level.id)
+
     nodes.value = LEVEL_DEFINITIONS.map((level, i) => ({
       id: level.id,
       title: level.title,
-      status: 'active',
+      status: getLevelStatus(level.id, orderedLevelIds),
       complexity: Math.min(3, i + 1),
 
       x: c.x + (i % 2 === 0 ? -offset : offset),

@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vehicle Advisor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0f2f8; }
+
+    #toolbar {
+      position: fixed; top: 14px; left: 14px; z-index: 1000;
+      display: flex; gap: 8px; align-items: center;
+    }
+    #run-btn {
+      background: #16a34a; color: #fff; border: none; border-radius: 8px;
+      padding: 9px 24px; font-size: 14px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 2px 12px rgba(22,163,74,0.3); transition: background .15s;
+    }
+    #run-btn:hover { background: #15803d; }
+    #legend {
+      display: flex; gap: 12px; align-items: center;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 8px;
+      padding: 6px 12px; font-size: 11px; color: #64748b;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .leg { display: flex; align-items: center; gap: 5px; }
+    .leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    #rete {
+      width: 100vw; height: 100vh;
+      background-color: #f0f2f8;
+      background-image: radial-gradient(circle, #c7cde0 1.5px, transparent 1.5px);
+      background-size: 26px 26px;
+    }
+
+    /* ---- Shared node shell ---- */
+    .survey-node {
+      min-width: 200px; border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.04);
+      user-select: none;
+    }
+    .node-hdr {
+      padding: 7px 12px 6px; border-radius: 9px 9px 0 0;
+      font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .node-bdy { background: #ffffff; border-radius: 0 0 9px 9px; padding: 8px 10px 10px; }
+
+    .nq { border: 1.5px solid #93c5fd; }
+    .nq .node-hdr { background: #dbeafe; color: #1d4ed8; border-bottom: 1px solid #bfdbfe; }
+    .nc { border: 1.5px solid #fdba74; }
+    .nc .node-hdr { background: #fff7ed; color: #c2410c; border-bottom: 1px solid #fed7aa; }
+    .ns { border: 1.5px solid #86efac; }
+    .ns .node-hdr { background: #dcfce7; color: #15803d; border-bottom: 1px solid #bbf7d0; }
+
+    .q-text   { font-size: 12.5px; color: #1e293b; padding: 4px 2px 4px; line-height: 1.45; }
+    .q-type   { font-size: 10px; color: #94a3b8; padding: 0 2px 6px; }
+    .s-label  { font-size: 12.5px; color: #15803d; padding: 4px 2px; font-style: italic; }
+    .s-vehicles { margin-top: 5px; border-top: 1px solid #f1f5f9; padding-top: 5px; }
+    .s-veh-row  { font-size: 10.5px; color: #059669; line-height: 1.7;
+                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .s-more     { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+
+    /* Sockets */
+    .sock-row { display: flex; align-items: center; margin: 4px 0; }
+    .sock-row.sr-out { justify-content: flex-end; }
+    .sock-row.sr-in  { justify-content: flex-start; }
+    .sock-lbl { font-size: 10px; color: #94a3b8; margin: 0 5px; }
+    .sock-dot {
+      width: 13px; height: 13px; border-radius: 50%; flex-shrink: 0;
+      cursor: crosshair; border: 2px solid rgba(0,0,0,0.15);
+      transition: transform .1s, box-shadow .1s;
+    }
+    .sock-dot:hover { transform: scale(1.4); box-shadow: 0 0 6px rgba(0,0,0,0.2); }
+    .sd-in  { background: #3b82f6; }
+    .sd-out { background: #f97316; }
+
+    /* Condition controls */
+    .cond-ctrls { margin: 6px 0; display: flex; flex-direction: column; gap: 5px; }
+    .cond-ctrls select, .cond-ctrls input {
+      background: #f8fafc; color: #1e293b; border: 1px solid #cbd5e1;
+      border-radius: 5px; padding: 4px 8px; font-size: 11px; width: 100%;
+      font-family: inherit;
+    }
+    .cond-ctrls select:focus, .cond-ctrls input:focus { outline: 1px solid #f97316; border-color: #f97316; }
+
+    /* ===================== Modal ===================== */
+    #modal-overlay {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(15,23,42,0.45); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity .2s;
+    }
+    #modal-overlay.open { opacity: 1; pointer-events: all; }
+    #modal-card {
+      background: #ffffff; border: 1px solid #e2e8f0;
+      border-radius: 16px; padding: 28px 32px 24px;
+      width: 440px; max-width: 92vw; max-height: 88vh; overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.18);
+      transform: translateY(18px) scale(0.97);
+      transition: transform .22s cubic-bezier(.22,1,.36,1);
+    }
+    #modal-overlay.open #modal-card { transform: translateY(0) scale(1); }
+
+    #modal-icon       { font-size: 34px; text-align: center; margin-bottom: 10px; line-height: 1; }
+    #modal-type-badge { text-align: center; font-size: 10px; font-weight: 700;
+                        letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 6px; color: #94a3b8; }
+    #modal-title      { font-size: 17px; font-weight: 600; color: #0f172a;
+                        text-align: center; line-height: 1.45; margin-bottom: 20px; }
+
+    /* --- Yes/No buttons --- */
+    .modal-choices { display: flex; gap: 10px; margin-bottom: 12px; }
+    .choice-btn {
+      flex: 1; border: none; border-radius: 10px; padding: 14px 0;
+      font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: transform .1s, filter .15s;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .choice-btn:hover  { filter: brightness(1.06); }
+    .choice-btn:active { transform: scale(0.96); }
+    .choice-yes { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+    .choice-no  { background: #fee2e2; color: #b91c1c; border: 1.5px solid #fca5a5; }
+
+    /* --- Radio option cards --- */
+    .modal-radio-opts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .radio-opt {
+      display: flex; align-items: center; gap: 12px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; padding: 12px 16px; cursor: pointer;
+      font-size: 14px; color: #1e293b; transition: all .15s;
+    }
+    .radio-opt:hover  { background: #eff6ff; border-color: #93c5fd; }
+    .radio-opt:active { transform: scale(0.98); }
+    .radio-opt-icon   { font-size: 22px; flex-shrink: 0; }
+
+    /* --- Range slider --- */
+    .range-wrap { margin-bottom: 16px; }
+    .range-val  { text-align: center; font-size: 40px; font-weight: 700;
+                  color: #0f172a; margin-bottom: 14px; line-height: 1; }
+    .range-unit { font-size: 16px; color: #64748b; font-weight: 400; margin-left: 6px; }
+    input[type=range].modal-slider {
+      width: 100%; -webkit-appearance: none; appearance: none;
+      height: 6px; border-radius: 3px; background: #e2e8f0; outline: none; cursor: pointer;
+    }
+    input[type=range].modal-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+      background: #3b82f6; cursor: pointer;
+      border: 2px solid #1d4ed8; box-shadow: 0 2px 8px rgba(59,130,246,0.35);
+    }
+
+    /* --- Multi-select checkboxes --- */
+    .multi-opts { display: flex; flex-direction: column; gap: 7px; margin-bottom: 12px; }
+    .multi-opt {
+      display: flex; align-items: center; gap: 12px;
+      background: #f8fafc; border: 1.5px solid #e2e8f0;
+      border-radius: 10px; padding: 11px 14px; cursor: pointer;
+      font-size: 13px; color: #1e293b; transition: all .15s;
+    }
+    .multi-opt:hover    { background: #f1f5f9; border-color: #cbd5e1; }
+    .multi-opt.selected { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; }
+    .multi-check {
+      width: 18px; height: 18px; border-radius: 5px; border: 2px solid #cbd5e1;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 11px; color: transparent; transition: all .15s;
+    }
+    .multi-opt.selected .multi-check { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .multi-opt-icon { font-size: 18px; flex-shrink: 0; }
+
+    /* --- Number stepper --- */
+    .stepper-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px; margin-bottom: 20px; padding: 8px 0;
+    }
+    .step-btn {
+      width: 50px; height: 50px; border-radius: 50%;
+      border: 2px solid #cbd5e1; background: #f8fafc; color: #1e293b;
+      font-size: 28px; cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center; transition: all .15s;
+    }
+    .step-btn:hover  { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+    .step-btn:active { transform: scale(0.92); }
+    .step-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .stepper-num  { text-align: center; min-width: 90px; }
+    .stepper-val  { font-size: 52px; font-weight: 700; color: #0f172a; line-height: 1; }
+    .stepper-unit { font-size: 13px; color: #64748b; margin-top: 3px; }
+
+    /* --- Shared confirm / cancel --- */
+    .modal-confirm {
+      width: 100%; background: #3b82f6; color: #fff; border: none;
+      border-radius: 9px; padding: 12px 0; font-size: 14px;
+      font-weight: 600; cursor: pointer; font-family: inherit;
+      margin-bottom: 10px; transition: background .15s, transform .1s;
+    }
+    .modal-confirm:hover  { background: #2563eb; }
+    .modal-confirm:active { transform: scale(0.97); }
+    .modal-cancel-link {
+      display: block; text-align: center; font-size: 12px; color: #94a3b8;
+      cursor: pointer; background: none; border: none; font-family: inherit;
+      padding: 4px 0; width: 100%; transition: color .15s;
+    }
+    .modal-cancel-link:hover { color: #64748b; }
+
+    /* --- Result mode --- */
+    #modal-submit {
+      display: none; width: 100%; background: #16a34a; color: #fff; border: none;
+      border-radius: 9px; padding: 11px 0; font-size: 14px;
+      font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: background .15s, transform .1s;
+    }
+    #modal-submit:hover  { background: #15803d; }
+    #modal-submit:active { transform: scale(0.97); }
+    #modal-card.result #modal-submit { display: block; }
+    #modal-card.result #modal-title  { color: #15803d; font-size: 15px; margin-bottom: 14px; }
+    #modal-vehicles { display: none; margin-bottom: 16px; }
+    #modal-card.result #modal-vehicles { display: block; }
+    .mv-item {
+      display: flex; align-items: center; gap: 10px;
+      background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 8px; padding: 9px 12px; margin-bottom: 7px;
+    }
+    .mv-emoji { font-size: 20px; flex-shrink: 0; }
+    .mv-info  { flex: 1; min-width: 0; }
+    .mv-name  { font-size: 13px; font-weight: 600; color: #0f172a; }
+    .mv-desc  { font-size: 11px; color: #64748b; margin-top: 1px; }
+  </style>
+</head>
+<body>
+  <div id="toolbar">
+    <button id="run-btn">▶ Find My Vehicle</button>
+    <div id="legend">
+      <div class="leg"><div class="leg-dot" style="background:#3b82f6"></div> Question</div>
+      <div class="leg"><div class="leg-dot" style="background:#f97316"></div> Condition</div>
+      <div class="leg"><div class="leg-dot" style="background:#22c55e"></div> Recommendation</div>
+    </div>
+  </div>
+  <div id="rete"></div>
+
+  <div id="modal-overlay">
+    <div id="modal-card">
+      <div id="modal-icon"></div>
+      <div id="modal-type-badge"></div>
+      <div id="modal-title"></div>
+      <div id="modal-input-area"></div>
+      <div id="modal-vehicles"></div>
+      <button id="modal-submit">Done — Start Over</button>
+    </div>
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react":             "https://esm.sh/react@18",
+      "react-dom":         "https://esm.sh/react-dom@18",
+      "react-dom/client":  "https://esm.sh/react-dom@18/client",
+      "rete":                   "https://esm.sh/rete@2",
+      "rete-area-plugin":       "https://esm.sh/rete-area-plugin@2?external=rete",
+      "rete-connection-plugin": "https://esm.sh/rete-connection-plugin@2?external=rete,rete-area-plugin",
+      "rete-react-plugin":      "https://esm.sh/rete-react-plugin@2?external=rete,rete-area-plugin,react,react-dom"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import { ClassicPreset, NodeEditor } from 'rete';
+    import { AreaPlugin, AreaExtensions } from 'rete-area-plugin';
+    import { ConnectionPlugin, Presets as ConnPresets } from 'rete-connection-plugin';
+    import { ReactPlugin, Presets } from 'rete-react-plugin';
+    import { createRoot } from 'react-dom/client';
+    import React, { useRef, useEffect, useState } from 'react';
+
+    const h    = React.createElement;
+    const sock = new ClassicPreset.Socket('value');
+
+    // ========================= Question types =========================
+    // type: 'yesno' | 'radio' | 'range' | 'multi' | 'stepper'
+    // options (by type):
+    //   radio/multi : [{ icon, label, value }]
+    //   range       : { min, max, step, unit, initial }
+    //   stepper     : { min, max, step, unit, initial }
+
+    const Q_TYPE_LABEL = {
+      yesno:   'Yes / No',
+      radio:   'Single choice',
+      range:   'Range select',
+      multi:   'Multi-select',
+      stepper: 'Number',
+    };
+
+    // ========================= Node model classes =========================
+
+    class QuestionNode extends ClassicPreset.Node {
+      constructor(question, type = 'yesno', options = []) {
+        super('Question');
+        this.question        = question;
+        this.questionType    = type;
+        this.questionOptions = options;
+        this.width = 220; this.height = 128;
+        this.addInput ('in',  new ClassicPreset.Input (sock, ''));
+        this.addOutput('out', new ClassicPreset.Output(sock, ''));
+      }
+    }
+
+    class ConditionNode extends ClassicPreset.Node {
+      constructor(op = 'equals', val = '') {
+        super('Condition');
+        this.operator = op; this.value = val;
+        this.width = 215; this.height = 172;
+        this.addInput ('in',    new ClassicPreset.Input (sock, ''));
+        this.addOutput('true',  new ClassicPreset.Output(sock, 'true'));
+        this.addOutput('false', new ClassicPreset.Output(sock, 'false'));
+      }
+    }
+
+    class ShowNode extends ClassicPreset.Node {
+      constructor(label, vehicles = []) {
+        super('Show');
+        this.label    = label;
+        this.vehicles = vehicles;
+        this.width  = 225;
+        this.height = 90 + Math.min(vehicles.length, 4) * 18;
+        this.addInput('in', new ClassicPreset.Input(sock, ''));
+      }
+    }
+
+    // ========================= SocketPin =========================
+    function SocketPin({ nodeId, side, socketKey, emit }) {
+      const ref = useRef(null);
+      useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        emit({ type: 'render', data: { type: 'socket', side, key: socketKey, nodeId, payload: sock, element: el } });
+        return () => emit({ type: 'unmount', data: { type: 'socket', element: el } });
+      }, []);
+      return h('div', { ref, className: `sock-dot ${side === 'input' ? 'sd-in' : 'sd-out'}` });
+    }
+
+    // ========================= Node React components =========================
+
+    function QuestionComp({ data, emit }) {
+      return h('div', { className: 'survey-node nq' },
+        h('div', { className: 'node-hdr' }, '❓ Question'),
+        h('div', { className: 'node-bdy' },
+          h('div', { className: 'sock-row sr-in' },
+            h(SocketPin, { nodeId: data.id, side: 'input', socketKey: 'in', emit }),
+            h('span', { className: 'sock-lbl' }, 'in')
+          ),
+          h('div', { className: 'q-text' }, data.question),
+          h('div', { className: 'q-type' }, Q_TYPE_LABEL[data.questionType] || 'Yes / No'),
+          h('div', { className: 'sock-row sr-out' },
+            h('span', { className: 'sock-lbl' }, 'out'),
+            h(SocketPin, { nodeId: data.id, side: 'output', socketKey: 'out', emit })
+          )
+        )
+      );
+    }
+
+    function ConditionComp({ data, emit }) {
+      const [op,  setOp ] = useState(data.operator);
+      const [val, setVal] = useState(data.value);
+      const nd = e => e.stopPropagation();
+      return h('div', { className: 'survey-node nc' },
+        h('div', { className: 'node-hdr' }, '⚡ Condition'),
+        h('div', { className: 'node-bdy' },
+          h('div', { className: 'sock-row sr-in' },
+            h(SocketPin, { nodeId: data.id, side: 'input', socketKey: 'in', emit }),
+            h('span', { className: 'sock-lbl' }, 'in')
+          ),
+          h('div', { className: 'cond-ctrls' },
+            h('select', {
+              value: op,
+              onChange: e => { setOp(e.target.value); data.operator = e.target.value; },
+              onPointerDown: nd
+            },
+              h('option', { value: 'equals'     }, '= equals'),
+              h('option', { value: 'not equals' }, '≠ not equals'),
+              h('option', { value: 'lte'        }, '≤ (numeric)'),
+              h('option', { value: 'gte'        }, '≥ (numeric)'),
+              h('option', { value: 'lt'         }, '< (numeric)'),
+              h('option', { value: 'gt'         }, '> (numeric)'),
+              h('option', { value: 'includes'   }, '∈ includes')
+            ),
+            h('input', {
+              type: 'text', value: val, placeholder: 'value…',
+              onChange: e => { setVal(e.target.value); data.value = e.target.value; },
+              onPointerDown: nd
+            })
+          ),
+          h('div', { className: 'sock-row sr-out' },
+            h('span', { className: 'sock-lbl' }, 'true'),
+            h(SocketPin, { nodeId: data.id, side: 'output', socketKey: 'true', emit })
+          ),
+          h('div', { className: 'sock-row sr-out' },
+            h('span', { className: 'sock-lbl' }, 'false'),
+            h(SocketPin, { nodeId: data.id, side: 'output', socketKey: 'false', emit })
+          )
+        )
+      );
+    }
+
+    function ShowComp({ data, emit }) {
+      return h('div', { className: 'survey-node ns' },
+        h('div', { className: 'node-hdr' }, '🚗 Recommendation'),
+        h('div', { className: 'node-bdy' },
+          h('div', { className: 'sock-row sr-in' },
+            h(SocketPin, { nodeId: data.id, side: 'input', socketKey: 'in', emit }),
+            h('span', { className: 'sock-lbl' }, 'in')
+          ),
+          h('div', { className: 's-label' }, data.label),
+          data.vehicles.length > 0 && h('div', { className: 's-vehicles' },
+            data.vehicles.slice(0, 4).map((v, i) =>
+              h('div', { key: i, className: 's-veh-row' }, `${v.emoji} ${v.name}`)
+            ),
+            data.vehicles.length > 4 && h('div', { className: 's-more' }, `+${data.vehicles.length - 4} more`)
+          )
+        )
+      );
+    }
+
+    // ========================= Modal =========================
+
+    const $overlay = () => document.getElementById('modal-overlay');
+    const $card    = () => document.getElementById('modal-card');
+    const openModal  = () => $overlay().classList.add('open');
+    const closeModal = () => $overlay().classList.remove('open');
+
+    // Renders question UI into #modal-input-area; resolves with answer string or null
+    function askQuestion(node) {
+      return new Promise(resolve => {
+        document.getElementById('modal-icon').textContent       = '❓';
+        document.getElementById('modal-type-badge').textContent = Q_TYPE_LABEL[node.questionType] || 'Question';
+        document.getElementById('modal-title').textContent      = node.question;
+        $card().classList.remove('result');
+
+        const area = document.getElementById('modal-input-area');
+        area.innerHTML = '';
+        const done = val => { closeModal(); resolve(val); };
+        const type = node.questionType || 'yesno';
+        const opts = node.questionOptions;
+
+        if (type === 'yesno') {
+          area.innerHTML = `
+            <div class="modal-choices">
+              <button class="choice-btn choice-yes" id="ma-yes">✓ Yes</button>
+              <button class="choice-btn choice-no"  id="ma-no">✗ No</button>
+            </div>
+            <button class="modal-cancel-link" id="ma-cancel">Cancel</button>`;
+          document.getElementById('ma-yes').onclick    = () => done('yes');
+          document.getElementById('ma-no').onclick     = () => done('no');
+          document.getElementById('ma-cancel').onclick = () => done(null);
+
+        } else if (type === 'radio') {
+          const items = opts.map(o =>
+            `<div class="radio-opt" data-value="${o.value}">
+               <span class="radio-opt-icon">${o.icon || '•'}</span>
+               <span>${o.label}</span>
+             </div>`).join('');
+          area.innerHTML = `
+            <div class="modal-radio-opts" id="ma-radio">${items}</div>
+            <button class="modal-cancel-link" id="ma-cancel">Cancel</button>`;
+          document.getElementById('ma-radio').addEventListener('click', e => {
+            const opt = e.target.closest('.radio-opt');
+            if (opt) done(opt.dataset.value);
+          });
+          document.getElementById('ma-cancel').onclick = () => done(null);
+
+        } else if (type === 'range') {
+          const { min = 0, max = 100, step = 1, unit = '', initial } = opts;
+          const init = initial ?? Math.round((min + max) / 2);
+          area.innerHTML = `
+            <div class="range-wrap">
+              <div class="range-val"><span id="ma-disp">${init}</span><span class="range-unit">${unit}</span></div>
+              <input type="range" class="modal-slider" id="ma-range" min="${min}" max="${max}" step="${step}" value="${init}">
+            </div>
+            <button class="modal-confirm" id="ma-confirm">Confirm →</button>
+            <button class="modal-cancel-link" id="ma-cancel">Cancel</button>`;
+          const slider = document.getElementById('ma-range');
+          slider.oninput = () => { document.getElementById('ma-disp').textContent = slider.value; };
+          document.getElementById('ma-confirm').onclick = () => done(slider.value);
+          document.getElementById('ma-cancel').onclick  = () => done(null);
+
+        } else if (type === 'multi') {
+          const items = opts.map(o =>
+            `<div class="multi-opt" data-value="${o.value}">
+               <div class="multi-check">✓</div>
+               <span class="multi-opt-icon">${o.icon || ''}</span>
+               <span>${o.label}</span>
+             </div>`).join('');
+          area.innerHTML = `
+            <div class="multi-opts" id="ma-multi">${items}</div>
+            <button class="modal-confirm" id="ma-confirm">Confirm selection →</button>
+            <button class="modal-cancel-link" id="ma-cancel">Cancel</button>`;
+          document.getElementById('ma-multi').addEventListener('click', e => {
+            const opt = e.target.closest('.multi-opt');
+            if (opt) opt.classList.toggle('selected');
+          });
+          document.getElementById('ma-confirm').onclick = () => {
+            const sel = [...document.querySelectorAll('.multi-opt.selected')].map(el => el.dataset.value);
+            done(sel.length ? sel.join(',') : 'none');
+          };
+          document.getElementById('ma-cancel').onclick = () => done(null);
+
+        } else if (type === 'stepper') {
+          const { min = 1, max = 20, step = 1, unit = '', initial = min } = opts;
+          let val = initial;
+          area.innerHTML = `
+            <div class="stepper-wrap">
+              <button class="step-btn" id="ma-minus">−</button>
+              <div class="stepper-num">
+                <div class="stepper-val" id="ma-sval">${val}</div>
+                <div class="stepper-unit">${unit}</div>
+              </div>
+              <button class="step-btn" id="ma-plus">+</button>
+            </div>
+            <button class="modal-confirm" id="ma-confirm">Confirm →</button>
+            <button class="modal-cancel-link" id="ma-cancel">Cancel</button>`;
+          const display = document.getElementById('ma-sval');
+          const minusBtn = document.getElementById('ma-minus');
+          const plusBtn  = document.getElementById('ma-plus');
+          const update = () => {
+            display.textContent = val;
+            minusBtn.disabled = val <= min;
+            plusBtn.disabled  = val >= max;
+          };
+          update();
+          minusBtn.onclick = () => { if (val > min) { val -= step; update(); } };
+          plusBtn.onclick  = () => { if (val < max) { val += step; update(); } };
+          document.getElementById('ma-confirm').onclick = () => done(String(val));
+          document.getElementById('ma-cancel').onclick  = () => done(null);
+        }
+
+        openModal();
+      });
+    }
+
+    // Shows recommendation result with vehicle cards
+    function showResult(label, vehicles = []) {
+      return new Promise(resolve => {
+        document.getElementById('modal-icon').textContent       = '🚗';
+        document.getElementById('modal-type-badge').textContent = 'Your Recommendation';
+        document.getElementById('modal-title').textContent      = label;
+        document.getElementById('modal-input-area').innerHTML   = '';
+        $card().classList.add('result');
+
+        const vehiclesEl = document.getElementById('modal-vehicles');
+        vehiclesEl.innerHTML = '';
+        vehicles.forEach(v => {
+          const d = document.createElement('div');
+          d.className = 'mv-item';
+          d.innerHTML = `<div class="mv-emoji">${v.emoji}</div>
+            <div class="mv-info">
+              <div class="mv-name">${v.name}</div>
+              <div class="mv-desc">${v.desc}</div>
+            </div>`;
+          vehiclesEl.appendChild(d);
+        });
+
+        openModal();
+        document.getElementById('modal-submit').onclick = () => { closeModal(); resolve(); };
+      });
+    }
+
+    // ========================= Graph evaluation =========================
+
+    function evaluate(answer, operator, value) {
+      const v = value.trim().toLowerCase();
+      switch (operator) {
+        case 'equals':     return answer === v;
+        case 'not equals': return answer !== v;
+        case 'lte':        return parseFloat(answer) <= parseFloat(v);
+        case 'gte':        return parseFloat(answer) >= parseFloat(v);
+        case 'lt':         return parseFloat(answer) <  parseFloat(v);
+        case 'gt':         return parseFloat(answer) >  parseFloat(v);
+        case 'includes':   return answer.split(',').includes(v);
+        default: return false;
+      }
+    }
+
+    async function runSurvey(editor) {
+      const nodes = editor.getNodes();
+      const conns = editor.getConnections();
+      const edgeMap = new Map(conns.map(c => [`${c.source}:${c.sourceOutput}`, c.target]));
+      const nodeMap = new Map(nodes.map(n => [n.id, n]));
+      const hasIncoming = new Set(conns.map(c => c.target));
+      const start = nodes.find(n => n instanceof QuestionNode && !hasIncoming.has(n.id));
+      if (!start) { await showResult('No start node found.'); return; }
+
+      let cur = start;
+      let lastAnswer = '';
+
+      while (cur) {
+        if (cur instanceof QuestionNode) {
+          const ans = await askQuestion(cur);  // pass full node for type/options
+          if (ans === null) return;
+          lastAnswer = ans;
+          cur = nodeMap.get(edgeMap.get(`${cur.id}:out`)) ?? null;
+
+        } else if (cur instanceof ConditionNode) {
+          const match = evaluate(lastAnswer, cur.operator, cur.value);
+          cur = nodeMap.get(edgeMap.get(`${cur.id}:${match ? 'true' : 'false'}`)) ?? null;
+
+        } else if (cur instanceof ShowNode) {
+          await showResult(cur.label, cur.vehicles);
+          break;
+
+        } else break;
+      }
+    }
+
+    // ========================= Editor setup =========================
+
+    async function setup() {
+      const container = document.getElementById('rete');
+      const editor = new NodeEditor();
+      const area   = new AreaPlugin(container);
+      const conn   = new ConnectionPlugin();
+      const render = new ReactPlugin({ createRoot });
+
+      editor.use(area);
+      area.use(render);
+      area.use(conn);
+      conn.addPreset(ConnPresets.classic.setup());
+      render.addPreset(Presets.classic.setup({
+        customize: {
+          node({ payload: n }) {
+            if (n instanceof QuestionNode)  return QuestionComp;
+            if (n instanceof ConditionNode) return ConditionComp;
+            if (n instanceof ShowNode)      return ShowComp;
+            return null;
+          }
+        }
+      }));
+      AreaExtensions.simpleNodesOrder(area);
+
+      // ====================================================================
+      // Vehicle consultation graph — 7 questions, 9 conditions, 10 leafs
+      // All questions answered via UI controls (no text entry)
+      // ====================================================================
+
+      // ---- Q1: radio — primary use ----
+      const q1 = new QuestionNode(
+        'What is your primary vehicle use?', 'radio', [
+          { icon: '🏙️', label: 'Daily commuting',      value: 'commuting'   },
+          { icon: '👨‍👩‍👧', label: 'Family & cargo',       value: 'family'      },
+          { icon: '🏔️', label: 'Recreation & leisure', value: 'recreation'  },
+        ]
+      );
+      const c1  = new ConditionNode('equals', 'commuting');  // true→commuting, false→c1b
+      const c1b = new ConditionNode('equals', 'family');     // true→family,    false→recreation
+
+      // ---- COMMUTING branch ----
+      const q2 = new QuestionNode(
+        'How long is your typical one-way commute?', 'range',
+        { min: 1, max: 100, step: 1, unit: 'km', initial: 20 }
+      );
+      const c2 = new ConditionNode('lte', '25');  // short vs long commute
+
+      const q3 = new QuestionNode(
+        'What matters most to you for short trips?', 'multi', [
+          { icon: '🅿️', label: 'Avoid parking hassle', value: 'parking' },
+          { icon: '🌱', label: 'Eco-friendly & green',  value: 'eco'     },
+          { icon: '💰', label: 'Ultra-low running cost', value: 'cost'   },
+        ]
+      );
+      const c3 = new ConditionNode('includes', 'parking');
+
+      const s1 = new ShowNode('Urban micro-mobility', [
+        { emoji: '🚴', name: 'Specialized Turbo Vado 4.0',    desc: 'Premium city e-bike, 130 km range' },
+        { emoji: '⚡', name: 'Riese & Müller Supercharger3',  desc: 'Speed pedelec, up to 45 km/h' },
+        { emoji: '🛵', name: 'NIU NQi GT Sport',              desc: 'Electric moped, connected app' },
+        { emoji: '🛴', name: 'Segway Ninebot Max G2',         desc: 'Long-range e-scooter, 65 km' },
+      ]);
+      const s2 = new ShowNode('Compact city EV', [
+        { emoji: '🚗', name: 'Fiat 500e',       desc: '320 km EV range, perfect footprint' },
+        { emoji: '🚗', name: 'VW ID.3 Pure',    desc: 'Compact EV, 350 km, OTA updates' },
+        { emoji: '🚗', name: 'Toyota Aygo X',   desc: 'Tiny, agile, great city MPG' },
+        { emoji: '🚗', name: 'Smart #1 EV',     desc: 'Pure electric, premium feel' },
+      ]);
+
+      const q4 = new QuestionNode(
+        'How often do you need highway or motorway driving?', 'radio', [
+          { icon: '🏘️', label: 'Mostly city & suburbs',   value: 'city'    },
+          { icon: '🛣️', label: 'Regular highway use',     value: 'highway' },
+        ]
+      );
+      const c4 = new ConditionNode('equals', 'highway');
+
+      const s3 = new ShowNode('Long-range electric', [
+        { emoji: '⚡', name: 'Tesla Model 3 LR',      desc: '602 km range, supercharger network' },
+        { emoji: '⚡', name: 'Hyundai IONIQ 6 AWD',   desc: '519 km, 800 V ultra-fast charging' },
+        { emoji: '⚡', name: 'BMW i4 eDrive40',       desc: '590 km, sporty Gran Coupé' },
+        { emoji: '⚡', name: 'Mercedes EQE 300',      desc: '654 km, luxury long-hauler' },
+      ]);
+      const s4 = new ShowNode('Efficient PHEV / hybrid', [
+        { emoji: '🚗', name: 'Toyota Prius PHEV',        desc: 'FHEV icon, >25 km EV city range' },
+        { emoji: '🚗', name: 'Skoda Octavia iV PHEV',    desc: '60 km EV range, massive boot' },
+        { emoji: '🚗', name: 'Volvo XC40 Recharge PHEV', desc: 'Premium compact SUV PHEV' },
+        { emoji: '🚗', name: 'Ford Kuga PHEV',           desc: 'Popular PHEV SUV, 60 km EV range' },
+      ]);
+
+      // ---- FAMILY branch ----
+      const q5 = new QuestionNode(
+        'How many seats do you need?', 'stepper',
+        { min: 2, max: 9, step: 1, unit: 'seats', initial: 5 }
+      );
+      const c5 = new ConditionNode('gte', '7');  // 7+ seats → large van
+
+      const q6 = new QuestionNode(
+        'Which features are essential for you?', 'multi', [
+          { icon: '🏔️', label: 'All-wheel drive (AWD)', value: 'awd'    },
+          { icon: '🪝', label: 'Towing capability',     value: 'towing' },
+          { icon: '📦', label: 'Maximum boot space',    value: 'boot'   },
+        ]
+      );
+      const c6 = new ConditionNode('includes', 'towing');
+
+      const s5 = new ShowNode('Large family van / MPV', [
+        { emoji: '🚐', name: 'VW Touran GTE',         desc: '7 seats, PHEV, efficient TDI' },
+        { emoji: '🚐', name: 'Renault Espace E-Tech',  desc: '7-seat full hybrid, panoramic roof' },
+        { emoji: '🚐', name: 'Ford Galaxy PHEV',       desc: '7 seats, practical plug-in hybrid' },
+        { emoji: '🚐', name: 'Chrysler Pacifica PHEV', desc: 'Plug-in minivan, 50 km EV range' },
+      ]);
+      const s6 = new ShowNode('Tow-capable SUV / pickup', [
+        { emoji: '🛻', name: 'Ford Ranger PHEV',       desc: 'Pickup, 3.5 t tow, EV range' },
+        { emoji: '🛻', name: 'Toyota Hilux GR',        desc: 'Legendary reliability, 3.5 t tow' },
+        { emoji: '🚙', name: 'Volvo XC90 Recharge',   desc: 'PHEV SUV, 2 t tow, 7 seats' },
+        { emoji: '🚙', name: 'Land Rover Discovery',   desc: '3.5 t tow, MHEV, supreme comfort' },
+      ]);
+      const s7 = new ShowNode('Family SUV / estate', [
+        { emoji: '🚙', name: 'Skoda Kodiaq iV',       desc: '7-seat PHEV SUV, great value' },
+        { emoji: '🚙', name: 'Volkswagen Tiguan PHEV', desc: '3-row PHEV, spacious interior' },
+        { emoji: '🚙', name: 'Volvo V90 Cross Country',desc: 'Estate + AWD + premium quality' },
+        { emoji: '🚙', name: 'Toyota RAV4 PHEV',       desc: 'AWD PHEV, 95 km EV range' },
+      ]);
+
+      // ---- RECREATION branch ----
+      const q7 = new QuestionNode(
+        'What type of driving excites you most?', 'radio', [
+          { icon: '🪨', label: 'Off-road & adventure',    value: 'offroad'  },
+          { icon: '🏁', label: 'Track days & performance', value: 'track'   },
+          { icon: '🗺️', label: 'Long-distance touring',   value: 'touring'  },
+        ]
+      );
+      const c7  = new ConditionNode('equals', 'offroad');
+      const c7b = new ConditionNode('equals', 'track');
+
+      const s8 = new ShowNode('Off-road & adventure 4×4', [
+        { emoji: '🛻', name: 'Land Rover Defender 110',  desc: 'Icon off-roader, PHEV option' },
+        { emoji: '🛻', name: 'Toyota Land Cruiser 300',  desc: 'Bulletproof reliability off-road' },
+        { emoji: '🛻', name: 'Jeep Wrangler 4xe PHEV',   desc: 'Solid axles, trail-rated, EV range' },
+        { emoji: '🛻', name: 'Ford Bronco',               desc: 'Heritage off-roader, removable top' },
+      ]);
+      const s9 = new ShowNode('Performance & track cars', [
+        { emoji: '🏎️', name: 'Porsche 718 Cayman',  desc: 'Mid-engine, razor-sharp handling' },
+        { emoji: '🏎️', name: 'BMW M2',              desc: '460 hp, rear-wheel-drive joy' },
+        { emoji: '🚗', name: 'VW Golf R',           desc: '333 hp AWD, daily-usable hot hatch' },
+        { emoji: '🚗', name: 'Alpine A110',         desc: 'Lightweight, 300 hp, sublime balance' },
+      ]);
+      const s10 = new ShowNode('Grand Tourer / touring', [
+        { emoji: '🚗', name: 'Porsche Panamera ST',  desc: 'PHEV, 700 km range, ultimate GT' },
+        { emoji: '🚗', name: 'BMW 5 Series Touring', desc: 'Effortless long-distance comfort' },
+        { emoji: '🚗', name: 'Mercedes E-Class PHEV',desc: 'Luxury cabin, 100+ km EV range' },
+        { emoji: '🚗', name: 'Kia EV6 GT',           desc: '585 hp EV, 504 km range, fast charges' },
+      ]);
+
+      const all = [q1,c1,c1b, q2,c2, q3,c3,s1,s2, q4,c4,s3,s4,
+                   q5,c5,s5, q6,c6,s6,s7, q7,c7,c7b,s8,s9,s10];
+      for (const n of all) await editor.addNode(n);
+
+      // ---- Layout ----
+      // 3 horizontal bands: commuting (top), family (mid), recreation (bottom)
+      // x: depth-based columns, y: centred within band
+      const C = 365;  // column pitch
+
+      // Commuting band (y ~50-640): 4 leaves S1-S4
+      await area.translate(q1.id,  { x: 0,    y: 790 });
+      await area.translate(c1.id,  { x: C,    y: 790 });
+
+      await area.translate(q2.id,  { x: C*2,  y: 300 });
+      await area.translate(c2.id,  { x: C*3,  y: 300 });
+      await area.translate(q3.id,  { x: C*4,  y: 120 });
+      await area.translate(c3.id,  { x: C*5,  y: 120 });
+      await area.translate(s1.id,  { x: C*6,  y: 30  });
+      await area.translate(s2.id,  { x: C*6,  y: 220 });
+      await area.translate(q4.id,  { x: C*4,  y: 490 });
+      await area.translate(c4.id,  { x: C*5,  y: 490 });
+      await area.translate(s3.id,  { x: C*6,  y: 400 });
+      await area.translate(s4.id,  { x: C*6,  y: 590 });
+
+      // Family band (y ~720-1120): 3 leaves S5-S7
+      await area.translate(c1b.id, { x: C*2,  y: 790 });
+      await area.translate(q5.id,  { x: C*3,  y: 790 });
+      await area.translate(c5.id,  { x: C*4,  y: 790 });
+      await area.translate(s5.id,  { x: C*5,  y: 710 });
+      await area.translate(q6.id,  { x: C*5,  y: 900 });
+      await area.translate(c6.id,  { x: C*6,  y: 900 });
+      await area.translate(s6.id,  { x: C*7,  y: 810 });
+      await area.translate(s7.id,  { x: C*7,  y: 1000 });
+
+      // Recreation band (y ~1200-1560): 3 leaves S8-S10
+      await area.translate(q7.id,  { x: C*3,  y: 1320 });
+      await area.translate(c7.id,  { x: C*4,  y: 1320 });
+      await area.translate(s8.id,  { x: C*5,  y: 1200 });
+      await area.translate(c7b.id, { x: C*5,  y: 1430 });
+      await area.translate(s9.id,  { x: C*6,  y: 1340 });
+      await area.translate(s10.id, { x: C*6,  y: 1530 });
+
+      // ---- Wire connections ----
+      const wire = (a, ao, b, bi) =>
+        editor.addConnection(new ClassicPreset.Connection(a, ao, b, bi));
+
+      // Trunk splits
+      await wire(q1, 'out',   c1,  'in');
+      await wire(c1, 'true',  q2,  'in');   // commuting
+      await wire(c1, 'false', c1b, 'in');   // not commuting → check family
+      await wire(c1b,'true',  q5,  'in');   // family
+      await wire(c1b,'false', q7,  'in');   // recreation
+
+      // Commuting — distance
+      await wire(q2, 'out',   c2,  'in');
+      await wire(c2, 'true',  q3,  'in');   // short → priorities?
+      await wire(c2, 'false', q4,  'in');   // long  → highway?
+
+      await wire(q3, 'out',   c3,  'in');
+      await wire(c3, 'true',  s1,  'in');   // parking → micro-mobility
+      await wire(c3, 'false', s2,  'in');   // else   → compact EV
+
+      await wire(q4, 'out',   c4,  'in');
+      await wire(c4, 'true',  s3,  'in');   // highway → long-range EV
+      await wire(c4, 'false', s4,  'in');   // city    → PHEV
+
+      // Family — seats
+      await wire(q5, 'out',   c5,  'in');
+      await wire(c5, 'true',  s5,  'in');   // 7+ seats → large van
+      await wire(c5, 'false', q6,  'in');   // < 7 → features?
+
+      await wire(q6, 'out',   c6,  'in');
+      await wire(c6, 'true',  s6,  'in');   // towing → tow-capable
+      await wire(c6, 'false', s7,  'in');   // else  → family SUV
+
+      // Recreation — type
+      await wire(q7, 'out',   c7,  'in');
+      await wire(c7, 'true',  s8,  'in');   // offroad → 4x4
+      await wire(c7, 'false', c7b, 'in');   // not offroad
+      await wire(c7b,'true',  s9,  'in');   // track → sports
+      await wire(c7b,'false', s10, 'in');   // touring → GT
+
+      await AreaExtensions.zoomAt(area, editor.getNodes());
+      document.getElementById('run-btn').addEventListener('click', () => runSurvey(editor));
+    }
+
+    setup().catch(err => {
+      console.error(err);
+      alert('Setup error: ' + err.message);
+    });
+  </script>
+</body>
+</html>

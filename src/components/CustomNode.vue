@@ -1,7 +1,7 @@
 <template>
   <div
     class="custom-node"
-    :class="[data.category, data.blockKind, data.scopeRole, { selected: data.selected }]"
+    :class="[data.category, data.blockKind, data.scopeRole, { selected: data.selected, 'debug-active': data.debugActive, 'debug-error-active': data.debugErrorActive }]"
     :style="nodeStyle"
   >
     <div class="header">
@@ -235,6 +235,20 @@ const onConditionChange = (event: Event) => {
 
 .custom-node.selected {
   outline: 3px solid rgba(118, 120, 238, 0.35);
+}
+
+.custom-node.debug-active {
+  outline: 4px solid #facc15;
+  box-shadow:
+    0 0 0 6px rgba(250, 204, 21, 0.25),
+    0 12px 28px rgba(146, 64, 14, 0.28);
+}
+
+.custom-node.debug-error-active {
+  outline-color: #ef4444;
+  box-shadow:
+    0 0 0 6px rgba(239, 68, 68, 0.24),
+    0 12px 28px rgba(127, 29, 29, 0.34);
 }
 
 .header {

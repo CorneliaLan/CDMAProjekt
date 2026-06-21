@@ -59,6 +59,7 @@ import MapNode from '@/components/MapNode.vue'
 
 import { colors } from '@/theme/colors'
 import { Maps } from '@/composables/Maps'
+import { LEVEL_PROGRESS_CHANGED_EVENT } from '@/composables/useLevelProgress'
 
 const { nodes, connections, getNode, recalcNodes } = Maps()
 const router = useRouter()
@@ -90,10 +91,12 @@ const openLevel = (id: number) => {
 onMounted(() => {
   updateLayout()
   window.addEventListener('resize', updateLayout)
+  window.addEventListener(LEVEL_PROGRESS_CHANGED_EVENT, updateLayout)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', updateLayout)
+  window.removeEventListener(LEVEL_PROGRESS_CHANGED_EVENT, updateLayout)
 })
 
 

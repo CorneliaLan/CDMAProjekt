@@ -1,5 +1,5 @@
 import { BaseBlock } from '../../BaseBlock';
-import { ExecutionContext } from '@/core/engine/ExecutionContext';
+import type { ExecutionContext } from '@/core/engine/ExecutionContext';
 
 /**
  * Shared base for all conditional (if) blocks.
@@ -19,7 +19,7 @@ export abstract class BaseIfBlock extends BaseBlock {
 
     for (const child of branch) {
       if (context.shouldStopExecution()) break;
-      child.execute(context);
+      context.executeBlock(child);
     }
   }
 

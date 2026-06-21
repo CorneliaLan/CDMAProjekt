@@ -1,6 +1,6 @@
 import { BaseBlock } from '../../BaseBlock';
 import { BlockCategory } from '../../BlockCategories';
-import { ExecutionContext } from '@/core/engine/ExecutionContext';
+import type { ExecutionContext } from '@/core/engine/ExecutionContext';
 
 export class RepeatBlock extends BaseBlock {
   readonly id = 'repeat-x';
@@ -24,7 +24,7 @@ export class RepeatBlock extends BaseBlock {
           break;
         }
 
-        child.execute(context);
+        context.executeBlock(child);
       }
     }
   }
