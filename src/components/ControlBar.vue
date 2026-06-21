@@ -2,7 +2,7 @@
   <div class="control-bar">
 
     <!-- PLAY BUTTON -->
-    <button class="primary-btn" type="button" title="Play" aria-label="Play" @click="emit('play')">
+    <button class="play-btn" type="button" title="Play" aria-label="Play" @click="emit('play')">
       <ion-icon name="play"></ion-icon>
     </button>
 
@@ -85,7 +85,7 @@ const emit = defineEmits<{
 <style scoped>
 .control-bar {
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 
   padding: 16px 24px;
   border-radius: 20px;
@@ -99,7 +99,7 @@ const emit = defineEmits<{
   transition: all 0.2s ease;
 }
 
-.primary-btn {
+.play-btn {
   width: 48px;
   height: 48px;
   border-radius: 14px;
@@ -114,7 +114,7 @@ const emit = defineEmits<{
   cursor: pointer;
 }
 
-.primary-btn ion-icon {
+.play-btn ion-icon {
   color: v-bind('colors.primaryBorder');
   font-size: 22px;
 }
@@ -123,7 +123,7 @@ const emit = defineEmits<{
 .actions {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 15px;
 }
 
 .icon-btn {
@@ -225,8 +225,8 @@ const emit = defineEmits<{
   }
 
   .play-btn {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     border-radius: 12px;
   }
 

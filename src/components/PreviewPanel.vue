@@ -191,8 +191,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .preview-panel {
-  width: 100%;
-  height: 90%;
+  width: 80%;
+  height: 80%;
 
   display: flex;
   flex-direction: column;
@@ -218,7 +218,8 @@ onBeforeUnmount(() => {
   overflow: hidden;
 
   gap: 18px;
-  padding: 18px;
+  padding-left: 18px;
+  padding-right: 18px;
   box-sizing: border-box;
 }
 
@@ -249,7 +250,7 @@ onBeforeUnmount(() => {
 .control-wrapper {
   flex-shrink: 0;
 
-  display: flex;
+  display: inline-block;
   justify-content: center;
 
   padding: 16px;
@@ -356,8 +357,6 @@ onBeforeUnmount(() => {
 
   .control-wrapper {
     flex-shrink: 0;
-    bottom: 400px;
-
     display: flex;
     align-items: center;
     justify-content: center;

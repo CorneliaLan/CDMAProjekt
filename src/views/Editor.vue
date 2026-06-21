@@ -1475,10 +1475,10 @@ const closePreview = () => {
 }
 
 .expand-preview-button {
-  position: absolute;
+  position: fixed;
   top: 80px;
   right: 24px;
-  z-index: 30;
+  z-index: 1000;
 
   border: none;
   border-radius: 12px;
@@ -1502,12 +1502,12 @@ const closePreview = () => {
   align-items: center;
   justify-content: center;
 
-  padding: 24px;
+  padding-top: 24px;
   box-sizing: border-box;
 }
 
 .close-preview-button {
-  position: absolute;
+  position: fixed;
   top: 80px;
   right: 24px;
   z-index: 10001;
@@ -1525,8 +1525,8 @@ const closePreview = () => {
 }
 
 .back-button {
-  position: absolute;
-  top: 24px;
+  position: fixed;
+  top: 80px;
   left: 24px;
   z-index: 30;
 
@@ -1638,12 +1638,16 @@ const closePreview = () => {
     padding: 0;
   }
 
+  .back-button {
+    top: 80px;
+  }
+
   .expand-preview-button {
-    top: 60px;
+    top: 80px;
   }
 
   .close-preview-button {
-    top: 60px;
+    top: 80px;
   }
 }
 </style>
