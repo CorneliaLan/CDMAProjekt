@@ -12,9 +12,11 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@capacitor-community/electron": "^5.0.1",
     "@capacitor/android": "^8.4.0",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
+    "@capacitor/electron": "^2.5.0",
     "@capacitor/screen-orientation": "^8.0.1",
     "@ionic/vue": "^8.8.5",
     "@ionic/vue-router": "^8.8.5",
